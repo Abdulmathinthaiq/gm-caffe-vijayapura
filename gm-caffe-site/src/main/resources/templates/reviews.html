@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Page Title: Keep under 60 characters -->
+    <title>GM Cafe Reviews | Customer Feedback Vijayapura</title>
+    
+    <!-- Meta Description: Keep between 150-160 characters -->
+    <meta name="description" content="Read customer reviews and ratings for GM Cafe Vijayapura Town. See what customers say about our coffee, food, and service in Devanahalli.">
+    
+    <!-- Keywords: Optional but helpful for some local directories -->
+    <meta name="keywords" content="GM Cafe reviews, Vijayapura cafe reviews, customer reviews Devanahalli, coffee shop reviews Vijayapura Town, GM Cafe ratings">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://www.gmcafe.com/reviews">
+    <meta property="og:title" content="GM Cafe Reviews | Customer Feedback Vijayapura">
+    <meta property="og:description" content="Read customer reviews and ratings for GM Cafe Vijayapura Town. See what customers say about our coffee and service.">
+    <meta property="og:image" content="https://www.gmcafe.com/images/gm-cafe-og.jpg">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://www.gmcafe.com/reviews">
+    <meta property="twitter:title" content="GM Cafe Reviews | Customer Feedback Vijayapura">
+    <meta property="twitter:description" content="Read customer reviews and ratings for GM Cafe Vijayapura Town. See what customers say about our coffee and service.">
+    <meta property="twitter:image" content="https://www.gmcafe.com/images/gm-cafe-og.jpg">
+    
+    <!-- Local Business Recommendations -->
+    <meta name="robots" content="index, follow">
+    <meta name="author" content="GM Cafe Vijayapura">
+    <meta name="geo.region" content="IN-KA">
+    <meta name="geo.placename" content="Vijayapura">
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/"><i class="fas fa-mug-hot"></i> GM Caffe</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/menu">Menu</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/about">About</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/gallery">Gallery</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="/reviews">Reviews</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/order">Order Online</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/contact">Contact</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <section class="page-header">
+        <div class="container">
+            <h1 class="display-3 text-white">Customer Reviews</h1>
+            <p class="lead text-white">What our customers say about us</p>
+        </div>
+    </section>
+
+    <!-- Reviews Section -->
+    <section class="reviews-section py-5">
+        <div class="container">
+            <!-- Success Message -->
+            <div class="alert alert-success alert-dismissible fade show" role="alert" th:if="${param.submitted}">
+                <i class="fas fa-check-circle"></i> Thank you! Your review has been submitted successfully and is pending approval.
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            
+            <!-- Error Message -->
+            <div class="alert alert-danger alert-dismissible fade show" role="alert" th:if="${param.error}">
+                <i class="fas fa-exclamation-circle"></i> There was an error submitting your review. Please try again.
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            
+            <!-- Rating Summary -->
+
+
+            <div class="row mb-5">
+                <div class="col-md-4 text-center">
+                    <div class="rating-box p-4 bg-light rounded">
+                        <h1 class="display-1 text-warning" th:text="${#numbers.formatDecimal(avgRating, 1, 1)}">4.5</h1>
+                        <div class="mb-2">
+                            <i class="fas fa-star text-warning" th:each="i : ${#numbers.sequence(1, 5)}"></i>
+                        </div>
+                        <p class="text-muted" th:text="${reviews.size() + ' reviews'}">0 reviews</p>
+                    </div>
+                </div>
+                <div class="col-md-8">
+                    <div class="review-form bg-light p-4 rounded">
+                        <h4 class="mb-3">Write a Review</h4>
+                        <form th:action="@{/reviews}" method="post">
+                            <div class="mb-3">
+                                <label class="form-label">Your Name</label>
+                                <input type="text" name="customerName" class="form-control" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Email</label>
+                                <input type="email" name="customerEmail" class="form-control" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Rating</label>
+                                <select name="rating" class="form-select" required>
+                                    <option value="5">5 Stars - Excellent</option>
+                                    <option value="4">4 Stars - Very Good</option>
+                                    <option value="3">3 Stars - Good</option>
+                                    <option value="2">2 Stars - Fair</option>
+                                    <option value="1">1 Star - Poor</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Your Review</label>
+                                <textarea name="comment" class="form-control" rows="4" required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-warning">Submit Review</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reviews List -->
+            <h3 class="mb-4">Customer Reviews</h3>
+            <div class="row">
+                <div class="col-md-6 mb-4" th:each="review : ${reviews}">
+                    <div class="review-card p-3 border rounded">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h5 class="mb-0" th:text="${review.customerName}">Customer Name</h5>
+                            <div class="rating">
+                                <i class="fas fa-star text-warning" th:each="i : ${#numbers.sequence(1, review.rating)}"></i>
+                            </div>
+                        </div>
+                        <p th:text="${review.comment}">Review comment...</p>
+                        <small class="text-muted" th:text="${#temporals.format(review.createdAt, 'dd MMM yyyy')}">Date</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-4" th:if="${reviews.empty}">
+                <p class="text-muted">No reviews yet. Be the first to review!</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4">
+        <div class="container text-center">
+            <p>&copy; 2024 GM Caffe. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/js/main.js}"></script>
+</body>
+</html>

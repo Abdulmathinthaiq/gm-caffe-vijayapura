@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Events & Catering - GM Caffe</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/"><i class="fas fa-mug-hot"></i> GM Caffe</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/menu">Menu</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/about">About</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/gallery">Gallery</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/reviews">Reviews</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/order">Order Online</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/contact">Contact</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <section class="page-header">
+        <div class="container">
+            <h1 class="display-3 text-white">Events & Catering</h1>
+            <p class="lead text-white">Make your special occasions memorable with GM Caffe</p>
+        </div>
+    </section>
+
+    <!-- Events Section -->
+    <section class="events-section py-5">
+        <div class="container">
+            <!-- Services -->
+            <div class="row mb-5">
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100 text-center">
+                        <div class="card-body">
+                            <i class="fas fa-birthday-cake fa-3x text-warning mb-3"></i>
+                            <h4>Birthday Parties</h4>
+                            <p>Make your birthday special with our premium coffee and delicious cakes.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100 text-center">
+                        <div class="card-body">
+                            <i class="fas fa-briefcase fa-3x text-warning mb-3"></i>
+                            <h4>Corporate Events</h4>
+                            <p>Professional catering for meetings, conferences, and team events.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100 text-center">
+                        <div class="card-body">
+                            <i class="fas fa-ring fa-3x text-warning mb-3"></i>
+                            <h4>Weddings</h4>
+                            <p>Elegant coffee and beverage services for your special day.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Catering Packages -->
+            <h2 class="text-center mb-4">Catering Packages</h2>
+            <div class="row mb-5">
+                <div class="col-md-4 mb-4">
+                    <div class="card pricing-card">
+                        <div class="card-header bg-warning">
+                            <h4 class="text-center">Basic</h4>
+                        </div>
+                        <div class="card-body text-center">
+                            <h3>₹15,000</h3>
+                            <p class="text-muted">up to 20 guests</p>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check text-success"></i> Coffee & Tea</li>
+                                <li><i class="fas fa-check text-success"></i> Light snacks</li>
+                                <li><i class="fas fa-check text-success"></i> 2 hour service</li>
+                            </ul>
+                            <button class="btn btn-warning">Book Now</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="card pricing-card">
+                        <div class="card-header bg-warning">
+                            <h4 class="text-center">Standard</h4>
+                        </div>
+                        <div class="card-body text-center">
+                            <h3>₹25,000</h3>
+                            <p class="text-muted">up to 50 guests</p>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check text-success"></i> Premium Coffee & Tea</li>
+                                <li><i class="fas fa-check text-success"></i> Snacks & Pastries</li>
+                                <li><i class="fas fa-check text-success"></i> 4 hour service</li>
+                            </ul>
+                            <button class="btn btn-warning">Book Now</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="card pricing-card">
+                        <div class="card-header bg-warning">
+                            <h4 class="text-center">Premium</h4>
+                        </div>
+                        <div class="card-body text-center">
+                            <h3>₹50,000</h3>
+                            <p class="text-muted">up to 100 guests</p>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check text-success"></i> All Premium Drinks</li>
+                                <li><i class="fas fa-check text-success"></i> Full buffet</li>
+                                <li><i class="fas fa-check text-success"></i> Full day service</li>
+                            </ul>
+                            <button class="btn btn-warning">Book Now</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Booking Form -->
+            <div class="card">
+                <div class="card-body">
+                    <h3 class="card-title mb-4">Book an Event</h3>
+                    <form>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Your Name</label>
+                                <input type="text" class="form-control" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Phone Number</label>
+                                <input type="tel" class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Event Date</label>
+                                <input type="date" class="form-control" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Number of Guests</label>
+                                <input type="number" class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Event Type</label>
+                            <select class="form-select">
+                                <option>Birthday Party</option>
+                                <option>Corporate Event</option>
+                                <option>Wedding</option>
+                                <option>Other</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Additional Requirements</label>
+                            <textarea class="form-control" rows="3"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-warning">Submit Inquiry</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4">
+        <div class="container text-center">
+            <p>&copy; 2024 GM Caffe. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script th:src="@{/js/main.js}"></script>
+</body>
+</html>
