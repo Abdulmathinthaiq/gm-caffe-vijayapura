@@ -3,7 +3,8 @@
 ## Prerequisites
 - Java 17 or higher
 - Maven 3.6+
-- MySQL (optional, for production)
+- Docker & Docker Compose (for containerized deployment)
+- MySQL (optional, for production without Docker)
 
 ## Quick Start - Run Locally
 
@@ -29,6 +30,65 @@ java -jar target/gm-caffe-site-1.0.0.jar
 ```
 
 The application will be available at: **http://localhost:8080**
+
+---
+
+## Docker Deployment
+
+### Option 1: Using Docker Compose (Recommended)
+
+This will start both MySQL database and the application:
+
+```
+bash
+cd gm-caffe-site
+docker-compose up -d
+```
+
+This will:
+- Start MySQL 8.0 on port 3306
+- Build and start the GM Caffe application on port 8080
+- Create a persistent volume for MySQL data
+
+Access the application at: **http://localhost:8080**
+
+### Option 2: Build and Run Docker Image Manually
+
+```
+bash
+# Build the image
+cd gm-caffe-site
+docker build -t gm-caffe:latest .
+
+# Run the container
+docker run -p 8080:8080 \
+  -e SPRING_PROFILES_ACTIVE=prod \
+  -e DB_HOST=your-mysql-host \
+  -e DB_PORT=3306 \
+  -e DB_NAME=gm_caffe \
+  -e DB_USER=gmcaffe \
+  -e DB_PASSWORD=your-password \
+  gm-caffe:latest
+```
+
+### Docker Compose Commands
+
+```
+bash
+# View logs
+docker-compose logs -f
+
+# Stop containers
+docker-compose down
+
+# Stop and remove volumes (will delete database)
+docker-compose down -v
+
+# Rebuild containers
+docker-compose up -d --build
+```
+
+---
 
 ## Deployment to Render.com (Free Tier)
 
@@ -77,6 +137,11 @@ After deployment:
 
 ## Troubleshooting
 
+### Docker Issues
+- Ensure Docker Desktop is running
+- Check logs with `docker-compose logs -f`
+- Rebuild with `docker-compose up -d --build`
+
 ### Build Fails
 - Ensure JAVA_VERSION is set to 17 in environment variables
 - Check that the Build Command is correct
@@ -87,8 +152,8 @@ After deployment:
 - Make sure to add the environment variables in Render dashboard
 
 ### Application Won't Start
-- Check the logs in Render dashboard
+- Check the logs in Render dashboard or Docker logs
 - Verify all required environment variables are set
 
 ## Support
-For issues, check the application logs in the Render dashboard.
+For issues, check the application logs in Docker or the Render dashboard.
