@@ -25,124 +25,70 @@ mvnw.cmd spring-boot:run
 bash
 cd gm-caffe-site
 ./mvnw clean package
-java -jar target/gm-caffe-site-0.0.1-SNAPSHOT.jar
+java -jar target/gm-caffe-site-1.0.0.jar
 ```
 
 The application will be available at: **http://localhost:8080**
 
-## Deployment to Cloud (Render.com - Free)
+## Deployment to Render.com (Free Tier)
 
-### Step 1: Prepare for Production
-1. Create a MySQL database (using free tier on Render or MySQL.com)
-2. Update `application.properties` with production database credentials
-3. Build the JAR file
+### Step 1: Create a MySQL Database on Render
+1. Go to https://dashboard.render.com
+2. Click "New +" and select "PostgreSQL" or "MySQL"
+3. Configure:
+   - Name: gm-caffe-db
+   - Database Name: gm_caffe
+   - User: gmcaffe
+4. Copy the "Internal Database URL" after creation
 
-### Step 2: Deploy to Render
-1. Push your code to GitHub
-2. Sign up at render.com
-3. Create a new "Web Service"
-4. Connect your GitHub repository
-5. Configure:
+### Step 2: Deploy Web Service
+1. In Render Dashboard, click "New +" and select "Web Service"
+2. Connect your GitHub repository: `Abdulmathinthaiq/gm-caffe-vijayapura`
+3. Configure:
+   - Name: gm-caffe
+   - Branch: master
    - Build Command: `./mvnw clean package -DskipTests`
-   - Start Command: `java -jar target/gm-caffe-site-0.0.1-SNAPSHOT.jar`
-6. Add environment variables for database
+   - Start Command: `java -jar target/gm-caffe-site-1.0.0.jar`
 
-## Deployment to VPS (DigitalOcean/RackSpace)
+### Step 3: Add Environment Variables
+In the Render web service settings, add these environment variables:
 
-### Step 1: Upload JAR
-```
-bash
-scp target/gm-caffe-site-0.0.1-SNAPSHOT.jar user@your-server:/home/
-```
+| Key | Value |
+|-----|-------|
+| JAVA_VERSION | 17 |
+| SPRING_PROFILES_ACTIVE | prod |
+| DB_HOST | your-mysql-host.from.render.com |
+| DB_PORT | 3306 |
+| DB_NAME | gm_caffe |
+| DB_USER | gmcaffe |
+| DB_PASSWORD | (your-database-password) |
 
-### Step 2: Run as Service
-Create a systemd service file:
-```
-bash
-sudo nano /etc/systemd/system/gmcaffe.service
-```
+**Note:** Replace the DB values with the ones from your Render MySQL database.
 
-Add content:
-```
-ini
-[Unit]
-Description=GM Cafe Application
-After=network.target
-
-[Service]
-Type=simple
-User=root
-WorkingDirectory=/home
-ExecStart=java -jar /home/gm-caffe-site-0.0.1-SNAPSHOT.jar
-ExecStop=kill $(pgrep -f gm-caffe)
-Restart=always
-
-[Install]
-WantedBy=multi-user.target
-```
-
-### Step 3: Start Service
-```
-bash
-sudo systemctl daemon-reload
-sudo systemctl start gmcaffe
-sudo systemctl enable gmcaffe
-```
-
-## Configuration for Production
-
-### Database Setup (MySQL)
-```
-properties
-spring.datasource.url=jdbc:mysql://localhost:3306/gm_caffe?useSSL=false&serverTimezone=UTC&createDatabaseIfNotExist=true
-spring.datasource.username=root
-spring.datasource.password=YOUR_PASSWORD
-spring.jpa.hibernate.ddl-auto=update
-spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQLDialect
-```
-
-### Disable H2 Console in Production
-```
-properties
-spring.h2.console.enabled=false
-```
-
-### Security
-- Change default admin credentials
-- Enable HTTPS/SSL
-- Update CORS settings if needed
+### Step 4: Deploy
+Click "Create Web Service" and wait for the build to complete.
 
 ## Access the Application
 
 After deployment:
-- **Website:** http://your-domain.com:8080
-- **Admin Panel:** http://your-domain.com:8080/admin
+- **Website:** https://gm-caffe.onrender.com (or your custom domain)
+- **Admin Panel:** https://gm-caffe.onrender.com/admin
 - **Default Admin:** admin / admin123
 
 ## Troubleshooting
 
-### Port Already in Use
-```
-bash
-# Find process using port 8080
-lsof -i :8080
-# Kill process
-kill -9 <PID>
-```
+### Build Fails
+- Ensure JAVA_VERSION is set to 17 in environment variables
+- Check that the Build Command is correct
 
 ### Database Connection Issues
-- Verify MySQL is running
-- Check credentials in application.properties
-- Ensure database exists
+- Verify MySQL database is created and running
+- Check that DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD are correct
+- Make sure to add the environment variables in Render dashboard
 
-### Memory Issues
-```
-bash
-java -Xmx512m -jar target/gm-caffe-site-0.0.1-SNAPSHOT.jar
-```
+### Application Won't Start
+- Check the logs in Render dashboard
+- Verify all required environment variables are set
 
 ## Support
-For issues, check logs:
-```
-bash
-tail -f /var/log/gmcaffe.log
+For issues, check the application logs in the Render dashboard.
