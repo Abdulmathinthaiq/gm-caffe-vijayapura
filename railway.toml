@@ -2,6 +2,7 @@
   builder = "nixpacks"
   buildCommand = "./mvnw clean package -DskipTests -q"
   installCommand = ""
+  dockerfilePath = ""
 
 [deploy]
   numReplicas = 1
@@ -13,3 +14,4 @@
 
 [variable]
   JAVA_VERSION = "17"
+  SPRING_PROFILES_ACTIVE = "prod"
