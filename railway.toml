@@ -1,7 +1,6 @@
 [build]
-builder = "nixpacks"
-buildCommand = "mvn clean package -DskipTests"
-startCommand = "java -jar target/gm-caffe-site-1.0.0.jar"
+builder = "docker"
+dockerfilePath = "Dockerfile"
 
 [deploy]
 numReplicas = 1
@@ -17,4 +16,3 @@ DB_PORT = "3306"
 DB_NAME = "railway"
 DB_USER = "root"
 DB_PASSWORD = "ZFMdFzxPYiHPVcclzgcMpMETplGJBetI"
-JAVA_VERSION = "17"
