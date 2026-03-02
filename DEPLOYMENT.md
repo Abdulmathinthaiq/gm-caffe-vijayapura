@@ -10,21 +10,15 @@
 
 ### Option 1: Using Maven Wrapper
 ```
-bash
-cd gm-caffe-site
 ./mvnw spring-boot:run
 ```
 Or on Windows:
 ```
-bash
-cd gm-caffe-site
 mvnw.cmd spring-boot:run
 ```
 
 ### Option 2: Using JAR File
 ```
-bash
-cd gm-caffe-site
 ./mvnw clean package
 java -jar target/gm-caffe-site-1.0.0.jar
 ```
@@ -40,8 +34,6 @@ The application will be available at: **http://localhost:8080**
 This will start both MySQL database and the application:
 
 ```
-bash
-cd gm-caffe-site
 docker-compose up -d
 ```
 
@@ -55,9 +47,7 @@ Access the application at: **http://localhost:8080**
 ### Option 2: Build and Run Docker Image Manually
 
 ```
-bash
 # Build the image
-cd gm-caffe-site
 docker build -t gm-caffe:latest .
 
 # Run the container
@@ -74,7 +64,6 @@ docker run -p 8080:8080 \
 ### Docker Compose Commands
 
 ```
-bash
 # View logs
 docker-compose logs -f
 
