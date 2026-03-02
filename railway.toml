@@ -1,17 +1,10 @@
 [build]
-  builder = "nixpacks"
-  buildCommand = "./mvnw clean package -DskipTests -q"
-  installCommand = ""
-  dockerfilePath = ""
+  builder = "docker"
+  dockerfilePath = "Dockerfile"
 
 [deploy]
   numReplicas = 1
   restartPolicyType = "ON_FAILURE"
   restartPolicyMaxRetries = 10
-  startCommand = "java -jar target/gm-caffe-site-1.0.0.jar"
   healthcheckPath = "/"
   healthcheckTimeout = 60
-
-[variable]
-  JAVA_VERSION = "17"
-  SPRING_PROFILES_ACTIVE = "prod"
