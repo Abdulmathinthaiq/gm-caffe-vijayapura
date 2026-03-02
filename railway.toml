@@ -8,3 +8,11 @@
   restartPolicyMaxRetries = 10
   healthcheckPath = "/"
   healthcheckTimeout = 60
+
+[variables]
+  SPRING_PROFILES_ACTIVE = "prod"
+  DB_HOST = "mysql.railway.internal"
+  DB_PORT = "3306"
+  DB_NAME = "railway"
+  DB_USER = "root"
+  DB_PASSWORD = "ZFMdFzxPYiHPVcclzgcMpMETplGJBetI"
