@@ -1,10 +1,19 @@
-FROM eclipse-temurin:17-jdk-alpine
+# Build stage
+FROM maven:3.9-eclipse-temurin-17 AS build
 WORKDIR /app
 COPY pom.xml .
 COPY src ./src
-RUN apk add --no-cache maven && \
-    mvn clean package -DskipTests && \
-    mv target/gm-caffe-site-1.0.0.jar app.jar && \
-    rm -rf src target
+RUN mvn clean package -DskipTests -B
+
+# Production stage
+FROM eclipse-temurin:17-jre-alpine
+WORKDIR /app
+
+# Copy the JAR file from build stage
+COPY --from=build /app/target/gm-caffe-site-1.0.0.jar app.jar
+
+# Expose port
 EXPOSE 8080
+
+# Run the application
 ENTRYPOINT ["java", "-jar", "app.jar"]
