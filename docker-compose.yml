@@ -30,6 +30,13 @@ services:
       - "8080:8080"
     environment:
       SPRING_PROFILES_ACTIVE: prod
+      # Railway-compatible MySQL environment variables
+      MYSQLHOST: mysql
+      MYSQLPORT: 3306
+      MYSQLDATABASE: gm_caffe
+      MYSQLUSER: gmcaffe
+      MYSQLPASSWORD: gmcaffepass
+      # Fallback variables (also used by docker-compose)
       DB_HOST: mysql
       DB_PORT: 3306
       DB_NAME: gm_caffe
