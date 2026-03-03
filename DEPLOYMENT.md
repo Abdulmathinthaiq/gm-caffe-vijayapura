@@ -53,11 +53,11 @@ docker build -t gm-caffe:latest .
 # Run the container
 docker run -p 8080:8080 \
   -e SPRING_PROFILES_ACTIVE=prod \
-  -e DB_HOST=your-mysql-host \
-  -e DB_PORT=3306 \
-  -e DB_NAME=gm_caffe \
-  -e DB_USER=gmcaffe \
-  -e DB_PASSWORD=your-password \
+  -e MYSQLHOST=your-mysql-host \
+  -e MYSQLPORT=3306 \
+  -e MYSQLDATABASE=gm_caffe \
+  -e MYSQLUSER=root \
+  -e MYSQLPASSWORD=your-password \
   gm-caffe:latest
 ```
 
@@ -90,6 +90,7 @@ docker-compose up -d --build
 ### Step 2: Add MySQL Database
 1. In Railway Dashboard, click "New +" and select "Database"
 2. Choose "MySQL"
+3. Wait for MySQL to be provisioned
 
 ### Step 3: Deploy the Application
 1. Click "New +" and select "Web Service"
@@ -101,82 +102,82 @@ docker-compose up -d --build
    - Start Command: `java -jar target/gm-caffe-site-1.0.0.jar`
 
 ### Step 4: Add Environment Variables
-Add these environment variables:
+In the Railway service settings, add these environment variables:
 
 | Key | Value |
 |-----|-------|
-| JAVA_VERSION | 17 |
 | SPRING_PROFILES_ACTIVE | prod |
 
-### Step 5: Deploy
+**Important:** Railway automatically provides MySQL environment variables:
+- MYSQLHOST
+- MYSQLPORT  
+- MYSQLDATABASE
+- MYSQLUSER
+- MYSQLPASSWORD
+
+These are automatically injected by Railway when you link your MySQL database to the service.
+
+### Step 5: Link MySQL Database to Service
+1. In Railway Dashboard, go to your web service
+2. Click on "Variables" tab
+3. Scroll down to "Referenced Variables"
+4. Click "Add Reference" and select your MySQL database
+5. This will automatically add the MYSQL* environment variables
+
+### Step 6: Deploy
 Click "Deploy" and wait for the build to complete.
 
 ---
 
-## Deployment to Render.com (Free Tier)
+## Railway Deployment Checklist
 
-### Step 1: Create a MySQL Database on Render
-1. Go to https://dashboard.render.com
-2. Click "New +" and select "PostgreSQL" or "MySQL"
-3. Configure:
-   - Name: gm-caffe-db
-   - Database Name: gm_caffe
-   - User: gmcaffe
-4. Copy the "Internal Database URL" after creation
+Before deploying, ensure these files are in your repository:
 
-### Step 2: Deploy Web Service
-1. In Render Dashboard, click "New +" and select "Web Service"
-2. Connect your GitHub repository: `Abdulmathinthaiq/gm-caffe-vijayapura`
-3. Configure:
-   - Name: gm-caffe
-   - Branch: master
-   - Build Command: `./mvnw clean package -DskipTests`
-   - Start Command: `java -jar target/gm-caffe-site-1.0.0.jar`
+- [ ] `pom.xml` - Maven configuration
+- [ ] `src/` - Java source code
+- [ ] `mvnw` and `mvnw.cmd` - Maven wrapper files
+- [ ] `Dockerfile` - Docker build configuration
+- [ ] `railway.toml` - Railway deployment configuration
 
-### Step 3: Add Environment Variables
-In the Render web service settings, add these environment variables:
+---
 
-| Key | Value |
-|-----|-------|
-| JAVA_VERSION | 17 |
-| SPRING_PROFILES_ACTIVE | prod |
-| DB_HOST | your-mysql-host.from.render.com |
-| DB_PORT | 3306 |
-| DB_NAME | gm_caffe |
-| DB_USER | gmcaffe |
-| DB_PASSWORD | (your-database-password) |
+## Troubleshooting Railway Deployment
 
-**Note:** Replace the DB values with the ones from your Render MySQL database.
+### Issue: Application crashes on startup
+**Solution:** 
+1. Check that MySQL database is linked properly
+2. Verify environment variables are set (MYSQLHOST, MYSQLPORT, etc.)
+3. Check the build logs for errors
 
-### Step 4: Deploy
-Click "Create Web Service" and wait for the build to complete.
+### Issue: Build fails
+**Solution:**
+- Ensure JAVA_VERSION is set to 17 in environment variables
+- Verify the Build Command is correct
+
+### Issue: Database connection errors
+**Solution:**
+1. Verify MySQL database is running
+2. Check that MYSQL* environment variables are present
+3. Make sure the database is linked to the service
+4. Wait for MySQL to fully provision (can take 1-2 minutes)
+
+### Issue: Application won't start
+**Solution:**
+- Check the logs in Railway dashboard
+- Verify all required environment variables are set
+- Ensure the JAR file was built successfully
+
+---
 
 ## Access the Application
 
-After deployment:
-- **Website:** https://gm-caffe.onrender.com (or your custom domain)
-- **Admin Panel:** https://gm-caffe.onrender.com/admin
+After Railway deployment:
+- **Website:** Your Railway URL (e.g., https://gm-caffe-production.up.railway.app)
+- **Admin Panel:** https://your-url/admin
 - **Default Admin:** admin / admin123
 
-## Troubleshooting
-
-### Docker Issues
-- Ensure Docker Desktop is running
-- Check logs with `docker-compose logs -f`
-- Rebuild with `docker-compose up -d --build`
-
-### Build Fails
-- Ensure JAVA_VERSION is set to 17 in environment variables
-- Check that the Build Command is correct
-
-### Database Connection Issues
-- Verify MySQL database is created and running
-- Check that DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD are correct
-- Make sure to add the environment variables in Render dashboard
-
-### Application Won't Start
-- Check the logs in Render dashboard or Docker logs
-- Verify all required environment variables are set
+---
 
 ## Support
-For issues, check the application logs in Docker or the Render dashboard.
+For issues, check the application logs in Railway dashboard or Docker.
+

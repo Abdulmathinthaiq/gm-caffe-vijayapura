@@ -9,8 +9,8 @@ RUN mvn clean package -DskipTests -B
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
-# Install bash and netcat for startup script
-RUN apk add --no-cache bash netcat-openbsd
+# Install required tools for network check
+RUN apk add --no-cache bash nc
 
 # Set production profile
 ENV SPRING_PROFILES_ACTIVE=prod
@@ -19,26 +19,29 @@ ENV SPRING_PROFILES_ACTIVE=prod
 COPY --from=build /app/target/gm-caffe-site-1.0.0.jar app.jar
 
 # Create startup script with database connection retry
-RUN printf '#!/bin/bash\n' \
-    && printf 'echo "Starting GM Caffe Application..."\n' \
-    && printf 'MAX_RETRIES=30\n' \
-    && printf 'RETRY_INTERVAL=2\n' \
-    && printf 'echo "Waiting for database to be ready..."\n' \
-    && printf 'for i in $(seq 1 $MAX_RETRIES); do\n' \
-    && printf '  if nc -z $MYSQLHOST $MYSQLPORT 2>/dev/null; then\n' \
-    && printf '    echo "Database is ready!"\n' \
-    && printf '    break\n' \
-    && printf '  fi\n' \
-    && printf '  echo "Waiting for database... attempt $i/$MAX_RETRIES"\n' \
-    && printf '  sleep $RETRY_INTERVAL\n' \
-    && printf 'done\n' \
-    && printf 'echo "Starting Java application..."\n' \
-    && printf 'exec java -jar -Dserver.port=$PORT app.jar\n' > /start.sh
+RUN echo '#!/bin/bash' > /start.sh && \
+    echo 'set -e' >> /start.sh && \
+    echo 'echo "Starting GM Caffe Application..."' >> /start.sh && \
+    echo 'echo "Database host: $MYSQLHOST"' >> /start.sh && \
+    echo 'echo "Database port: $MYSQLPORT"' >> /start.sh && \
+    echo 'MAX_RETRIES=30' >> /start.sh && \
+    echo 'RETRY_INTERVAL=3' >> /start.sh && \
+    echo 'for i in $(seq 1 $MAX_RETRIES); do' >> /start.sh && \
+    echo '  if nc -z "$MYSQLHOST" "$MYSQLPORT" 2>/dev/null; then' >> /start.sh && \
+    echo '    echo "Database is ready!"' >> /start.sh && \
+    echo '    break' >> /start.sh && \
+    echo '  fi' >> /start.sh && \
+    echo '  echo "Waiting for database... attempt $i/$MAX_RETRIES"' >> /start.sh && \
+    echo '  sleep $RETRY_INTERVAL' >> /start.sh && \
+    echo 'done' >> /start.sh && \
+    echo 'echo "Starting Java application..."' >> /start.sh && \
+    echo 'exec java -jar -Dserver.port=$PORT app.jar' >> /start.sh
 
 RUN chmod +x /start.sh
 
-# Expose port
+# Expose port (Railway will override with PORT env var)
 EXPOSE 8080
 
 # Run the application with startup script
 ENTRYPOINT ["/start.sh"]
+
