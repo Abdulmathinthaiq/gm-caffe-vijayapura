@@ -9,6 +9,9 @@ RUN mvn clean package -DskipTests -B
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
+# Set production profile
+ENV SPRING_PROFILES_ACTIVE=prod
+
 # Copy the JAR file from build stage
 COPY --from=build /app/target/gm-caffe-site-1.0.0.jar app.jar
 
