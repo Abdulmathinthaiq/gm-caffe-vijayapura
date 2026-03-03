@@ -6,14 +6,10 @@ startCommand = "java -jar target/gm-caffe-site-1.0.0.jar"
 [deploy]
 region = "ap-south"
 environment = "production"
+numReplicas = 1
 
-# Expose port for Railway
 [web]
-command = "java -jar target/gm-caffe-site-1.0.0.jar"
-buildCommand = "./mvnw clean package -DskipTests"
-developmentCommand = "./mvnw spring-boot:run"
-# Railway sets the PORT environment variable automatically
-# Make sure to expose the correct port
 public = true
+
 </content>
 </invoke>
