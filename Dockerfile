@@ -24,6 +24,8 @@ RUN echo '#!/bin/bash' > /start.sh && \
     echo 'echo "Starting GM Caffe Application..."' >> /start.sh && \
     echo 'echo "Database host: $MYSQLHOST"' >> /start.sh && \
     echo 'echo "Database port: $MYSQLPORT"' >> /start.sh && \
+    echo 'PORT=${PORT:-8080}' >> /start.sh && \
+    echo 'echo "Using port: $PORT"' >> /start.sh && \
     echo 'MAX_RETRIES=30' >> /start.sh && \
     echo 'RETRY_INTERVAL=3' >> /start.sh && \
     echo 'for i in $(seq 1 $MAX_RETRIES); do' >> /start.sh && \
@@ -34,8 +36,8 @@ RUN echo '#!/bin/bash' > /start.sh && \
     echo '  echo "Waiting for database... attempt $i/$MAX_RETRIES"' >> /start.sh && \
     echo '  sleep $RETRY_INTERVAL' >> /start.sh && \
     echo 'done' >> /start.sh && \
-    echo 'echo "Starting Java application..."' >> /start.sh && \
-    echo 'exec java -jar -Dserver.port=$PORT app.jar' >> /start.sh
+    echo 'echo "Starting Java application on port $PORT..."' >> /start.sh && \
+    echo 'exec java -jar -Dserver.port=$PORT -Dserver.address=0.0.0.0 app.jar' >> /start.sh
 
 RUN chmod +x /start.sh
 
