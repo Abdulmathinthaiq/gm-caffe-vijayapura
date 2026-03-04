@@ -129,6 +129,59 @@ Click "Deploy" and wait for the build to complete.
 
 ---
 
+## Deployment to Render.com
+
+Render offers a free tier perfect for this Spring Boot application.
+
+### Step 1: Create a GitHub Repository
+If you haven't already, push your code to GitHub:
+```bash
+cd gm-caffe-site
+git init
+git add .
+git commit -m "Initial commit"
+gh repo create gm-caffe-vijayapura --public --source=. --push
+```
+
+### Step 2: Deploy to Render
+1. Go to https://render.com and sign up with your GitHub account
+2. Click "New +" → "Web Service"
+3. Connect your GitHub repository: `gm-caffe-vijayapura`
+4. Configure:
+   - **Name**: gm-caffe
+   - **Branch**: main (or master)
+   - **Runtime**: Java 17
+   - **Build Command**: `./mvnw clean package -DskipTests`
+   - **Start Command**: `java -jar target/gm-caffe-site-1.0.0.jar`
+
+### Step 3: Add Environment Variables
+Add these environment variables in Render settings:
+
+| Key | Value |
+|-----|-------|
+| SPRING_PROFILES_ACTIVE | prod |
+
+### Step 4: Add a Database
+
+**Option A - PostgreSQL (Recommended):**
+1. Click "New +" → "PostgreSQL"
+2. Create database named `gm_caffe`
+3. Update web service env vars with PostgreSQL connection details
+
+**Option B - MySQL:**
+Use an external MySQL provider like Clever Cloud or PlanetScale.
+
+### Step 5: Deploy
+Click "Deploy" and wait for the build to complete.
+
+### Using render.yaml (Automatic)
+A `render.yaml` file is included in the repository for automatic deployment:
+1. In Render Dashboard, click "New +" → "Blueprint"
+2. Connect your repository
+3. Render will automatically create the services
+
+---
+
 ## Railway Deployment Checklist
 
 Before deploying, ensure these files are in your repository:

@@ -10,7 +10,7 @@ FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
 # Install required tools for network check
-RUN apk add --no-cache bash nc
+RUN apk add --no-cache bash netcat-openbsd || apk add --no-cache bash busybox-extras
 
 # Set production profile
 ENV SPRING_PROFILES_ACTIVE=prod
