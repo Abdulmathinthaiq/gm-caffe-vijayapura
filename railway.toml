@@ -1,15 +1,7 @@
 [build]
 builder = "maven"
-buildCommand = "./mvnw clean package -DskipTests"
-startCommand = "java -jar target/gm-caffe-site-1.0.0.jar"
 
 [deploy]
-region = "ap-south"
-environment = "production"
 numReplicas = 1
-
-[web]
-public = true
-
-</content>
-</invoke>
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
