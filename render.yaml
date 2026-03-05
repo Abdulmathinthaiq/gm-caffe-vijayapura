@@ -1,19 +1,9 @@
 services:
-  - type: web
+  - type: docker
     name: gm-caffe
     dockerfilePath: Dockerfile
-    region: oregon
+    region: singapore
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
-      - key: MYSQLHOST
-        sync: false
-      - key: MYSQLPORT
-        value: "3306"
-      - key: MYSQLDATABASE
-        value: gm_caffe
-      - key: MYSQLUSER
-        sync: false
-      - key: MYSQLPASSWORD
-        sync: false
 
