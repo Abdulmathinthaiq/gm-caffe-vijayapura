@@ -79,53 +79,106 @@ docker-compose up -d --build
 
 ---
 
-## Deployment to Railway.com
+## Deployment to Railway.com (DETAILED)
 
-### Step 1: Create a Railway Project
-1. Go to https://railway.app and sign in
-2. Click "New Project" 
-3. Select "Deploy GitHub repo"
-4. Connect your GitHub repository
+### Step 1: Create Railway Account
+1. Go to https://railway.app and sign in with GitHub
+2. Click "New Project"
+3. Select "Deploy from GitHub repo"
+4. Choose your repository: `gm-caffe-vijayapura`
 
 ### Step 2: Add MySQL Database
 1. In Railway Dashboard, click "New +" and select "Database"
 2. Choose "MySQL"
-3. Wait for MySQL to be provisioned
+3. Wait for MySQL to be provisioned (takes ~1-2 minutes)
+4. Note the connection details that will be auto-generated
 
-### Step 3: Deploy the Application
-1. Click "New +" and select "Web Service"
-2. Select your GitHub repository
-3. Configure:
-   - Name: gm-caffe
-   - Branch: main (or master)
-   - Build Command: `./mvnw clean package -DskipTests`
-   - Start Command: `java -jar target/gm-caffe-site-1.0.0.jar`
+### Step 3: Add Environment Variables
+After MySQL is created, Railway automatically provides these variables:
+- `MYSQLHOST` - Your MySQL hostname
+- `MYSQLPORT` - Your MySQL port (usually 3306)
+- `MYSQLDATABASE` - Your database name
+- `MYSQLUSER` - Your database username
+- `MYSQLPASSWORD` - Your database password
 
-### Step 4: Add Environment Variables
-In the Railway service settings, add these environment variables:
-
+**Important:** You MUST also add:
 | Key | Value |
 |-----|-------|
 | SPRING_PROFILES_ACTIVE | prod |
 
-**Important:** Railway automatically provides MySQL environment variables:
-- MYSQLHOST
-- MYSQLPORT  
-- MYSQLDATABASE
-- MYSQLUSER
-- MYSQLPASSWORD
+### Step 4: Deploy the Application
+1. Click "New +" and select "Web Service"
+2. Select your GitHub repository
+3. Configure:
+   - **Name**: gm-caffe
+   - **Branch**: main (or master)
+   - **Build Command**: `./mvnw clean package -DskipTests`
+   - **Start Command**: `java -jar target/gm-caffe-site-1.0.0.jar`
 
-These are automatically injected by Railway when you link your MySQL database to the service.
+### Step 5: Link MySQL to Your Service (CRITICAL)
+This is the most important step - without it, the app won't connect to the database!
 
-### Step 5: Link MySQL Database to Service
 1. In Railway Dashboard, go to your web service
 2. Click on "Variables" tab
-3. Scroll down to "Referenced Variables"
-4. Click "Add Reference" and select your MySQL database
-5. This will automatically add the MYSQL* environment variables
+3. Scroll down to "Referenced Variables" section
+4. Click "Add Reference"
+5. Select your MySQL database from the list
+6. This will automatically add all `MYSQL*` environment variables
 
 ### Step 6: Deploy
-Click "Deploy" and wait for the build to complete.
+1. Click "Deploy" 
+2. Wait for the build to complete (~5-10 minutes)
+3. Check the deploy logs for any errors
+
+### Railway-Specific Troubleshooting
+
+#### Issue: `UnknownHostException: ${DB_HOST}`
+**Cause:** Environment variables not being substituted properly
+**Solution:** 
+- Make sure you linked MySQL to your service (Step 5)
+- Verify MYSQLHOST is set in Variables tab
+
+#### Issue: `Communications link failure`
+**Cause:** Cannot connect to MySQL database
+**Solution:**
+1. Check MySQL is running (green status in Railway)
+2. Verify MYSQL* variables are set
+3. Wait 2 minutes for MySQL to fully provision
+4. Check MySQL logs in Railway dashboard
+
+#### Issue: `Access denied for user`
+**Cause:** Wrong username/password
+**Solution:**
+1. Check MYSQLUSER and MYSQLPASSWORD variables
+2. Make sure MySQL is linked to the service
+
+#### Issue: Application starts but shows error page
+**Solution:**
+- Check the application logs in Railway dashboard
+- Verify all environment variables are correct
+- Make sure `SPRING_PROFILES_ACTIVE=prod` is set
+
+### Alternative: Using Railway CLI
+
+```bash
+# Install Railway CLI
+npm install -g railway
+
+# Login
+railway login
+
+# Link to project
+railway link
+
+# Add MySQL
+railway add mysql
+
+# Add environment variables
+railway variables set SPRING_PROFILES_ACTIVE=prod
+
+# Deploy
+railway up
+```
 
 ---
 
@@ -182,55 +235,14 @@ A `render.yaml` file is included in the repository for automatic deployment:
 
 ---
 
-## Railway Deployment Checklist
-
-Before deploying, ensure these files are in your repository:
-
-- [ ] `pom.xml` - Maven configuration
-- [ ] `src/` - Java source code
-- [ ] `mvnw` and `mvnw.cmd` - Maven wrapper files
-- [ ] `Dockerfile` - Docker build configuration
-- [ ] `railway.toml` - Railway deployment configuration
-
----
-
-## Troubleshooting Railway Deployment
-
-### Issue: Application crashes on startup
-**Solution:** 
-1. Check that MySQL database is linked properly
-2. Verify environment variables are set (MYSQLHOST, MYSQLPORT, etc.)
-3. Check the build logs for errors
-
-### Issue: Build fails
-**Solution:**
-- Ensure JAVA_VERSION is set to 17 in environment variables
-- Verify the Build Command is correct
-
-### Issue: Database connection errors
-**Solution:**
-1. Verify MySQL database is running
-2. Check that MYSQL* environment variables are present
-3. Make sure the database is linked to the service
-4. Wait for MySQL to fully provision (can take 1-2 minutes)
-
-### Issue: Application won't start
-**Solution:**
-- Check the logs in Railway dashboard
-- Verify all required environment variables are set
-- Ensure the JAR file was built successfully
-
----
-
 ## Access the Application
 
-After Railway deployment:
-- **Website:** Your Railway URL (e.g., https://gm-caffe-production.up.railway.app)
+After deployment:
+- **Website:** Your Railway/Render URL
 - **Admin Panel:** https://your-url/admin
 - **Default Admin:** admin / admin123
 
 ---
 
 ## Support
-For issues, check the application logs in Railway dashboard or Docker.
-
+For issues, check the application logs in Railway/Render dashboard or Docker.
