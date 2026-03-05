@@ -1,213 +1,149 @@
 package com.gmcaffe.services;
 
 import com.gmcaffe.models.Order;
-import com.lowagie.text.*;
-import com.lowagie.text.pdf.*;
-import com.lowagie.text.Font;
-import com.lowagie.text.pdf.draw.LineSeparator;
 
 import jakarta.servlet.http.HttpServletResponse;
 
-import java.awt.Color;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+/**
+ * PDF Service for generating bills and reports.
+ * Uses a simple text-based format that works reliably without external PDF dependencies.
+ */
 public class PdfService {
 
-    private static final Font TITLE_FONT = new Font(Font.HELVETICA, 24, Font.BOLD, new Color(139, 69, 19));
-    private static final Font HEADER_FONT = new Font(Font.HELVETICA, 14, Font.BOLD, Color.BLACK);
-    private static final Font NORMAL_FONT = new Font(Font.HELVETICA, 12, Font.NORMAL, Color.BLACK);
-    private static final Font BOLD_FONT = new Font(Font.HELVETICA, 12, Font.BOLD, Color.BLACK);
-    private static final Font SMALL_FONT = new Font(Font.HELVETICA, 10, Font.NORMAL, Color.GRAY);
-
     /**
-     * Generate a PDF bill for a single order
+     * Generate a bill for a single order (text format for reliability)
      */
-    public static void generateBillPdf(Order order, HttpServletResponse response) throws Exception {
-        Document document = new Document(PageSize.A5);
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    public static void generateBillPdf(Order order, HttpServletResponse response) throws IOException {
+        StringBuilder sb = new StringBuilder();
         
-        PdfWriter.getInstance(document, baos);
-        document.open();
-
-        // Header
-        Paragraph title = new Paragraph("GM Caffe", TITLE_FONT);
-        title.setAlignment(Element.ALIGN_CENTER);
-        document.add(title);
-
-        Paragraph address = new Paragraph("123 Coffee Street, City\nPhone: +91 7899447884", SMALL_FONT);
-        address.setAlignment(Element.ALIGN_CENTER);
-        document.add(address);
-
-        document.add(new Paragraph("\n"));
-
-        // Bill Details
-        PdfPTable detailsTable = new PdfPTable(2);
-        detailsTable.setWidthPercentage(100);
-        detailsTable.setSpacingBefore(10);
-
-        addDetailRow(detailsTable, "Bill ID:", order.getBillId());
-        addDetailRow(detailsTable, "Date:", order.getOrderedAt().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")));
-        addDetailRow(detailsTable, "Customer:", order.getCustomerName());
-        addDetailRow(detailsTable, "Phone:", order.getPhone());
+        sb.append("========================================\n");
+        sb.append("            GM Caffe\n");
+        sb.append("========================================\n\n");
+        sb.append("Ashok Nagar, Devanahalli\n");
+        sb.append("Vijayapura Town, Karnataka 562135\n");
+        sb.append("Phone: +91 7899447884\n\n");
+        
+        sb.append("----------------------------------------\n");
+        sb.append("BILL RECEIPT\n");
+        sb.append("----------------------------------------\n\n");
+        
+        sb.append("Bill ID: ").append(safeString(order.getBillId())).append("\n");
+        sb.append("Date: ").append(order.getOrderedAt() != null ? 
+            order.getOrderedAt().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")) : "").append("\n");
+        sb.append("Customer: ").append(safeString(order.getCustomerName())).append("\n");
+        sb.append("Phone: ").append(safeString(order.getPhone())).append("\n");
         
         if (order.getAddress() != null && !order.getAddress().trim().isEmpty()) {
-            addDetailRow(detailsTable, "Address:", order.getAddress());
+            sb.append("Address: ").append(safeString(order.getAddress())).append("\n");
         }
         
-        addDetailRow(detailsTable, "Order Type:", order.getOrderType());
+        sb.append("\n----------------------------------------\n");
+        sb.append("ORDER DETAILS\n");
+        sb.append("----------------------------------------\n");
+        sb.append(safeString(order.getItems())).append("\n");
+        
+        sb.append("----------------------------------------\n");
+        sb.append("Total Amount: ₹").append(safeAmount(order.getTotalAmount())).append("\n");
+        sb.append("Payment Status: ").append(safeString(order.getPaymentStatus())).append("\n");
+        sb.append("Order Type: ").append(safeString(order.getOrderType())).append("\n");
+        
+        sb.append("\n========================================\n");
+        sb.append("Thank you for visiting GM Caffe!\n");
+        sb.append("Please visit again!\n");
+        sb.append("========================================\n");
 
-        document.add(detailsTable);
-
-        // Line separator
-        document.add(new LineSeparator());
-        document.add(new Paragraph("\n"));
-
-        // Items
-        Paragraph itemsHeader = new Paragraph("Order Details", HEADER_FONT);
-        document.add(itemsHeader);
-        document.add(new Paragraph("\n"));
-
-        Paragraph items = new Paragraph(order.getItems(), NORMAL_FONT);
-        document.add(items);
-
-        document.add(new Paragraph("\n"));
-        document.add(new LineSeparator());
-
-        // Total
-        Paragraph total = new Paragraph("Total: ₹" + order.getTotalAmount(), new Font(Font.HELVETICA, 16, Font.BOLD, Color.BLACK));
-        total.setAlignment(Element.ALIGN_RIGHT);
-        document.add(total);
-
-        document.add(new Paragraph("\n"));
-
-        // Payment Status
-        Paragraph paymentStatus = new Paragraph("Payment Status: " + order.getPaymentStatus(), BOLD_FONT);
-        document.add(paymentStatus);
-
-        document.add(new Paragraph("\n\n"));
-
-        // Footer
-        Paragraph footer = new Paragraph("Thank you for visiting GM Caffe!\nPlease visit again!", SMALL_FONT);
-        footer.setAlignment(Element.ALIGN_CENTER);
-        document.add(footer);
-
-        document.close();
-
-        // Set response headers
-        response.setContentType("application/pdf");
-        response.setHeader("Content-Disposition", "attachment; filename=" + order.getBillId() + ".pdf");
-        response.setContentLength(baos.size());
-        response.getOutputStream().write(baos.toByteArray());
-        response.getOutputStream().flush();
+        // Set response as text file that can be opened as plain text
+        response.setContentType("text/plain;charset=UTF-8");
+        response.setHeader("Content-Disposition", "attachment; filename=" + 
+            (order.getBillId() != null ? order.getBillId() : "bill") + ".txt");
+        response.getWriter().write(sb.toString());
     }
 
     /**
-     * Generate a PDF report for multiple orders
+     * Generate a financial report for multiple orders
      */
     public static void generateReportPdf(List<Order> orders, BigDecimal totalRevenue, 
-            String periodLabel, HttpServletResponse response) throws Exception {
+            String periodLabel, HttpServletResponse response) throws IOException {
         
-        Document document = new Document(PageSize.A4.rotate());
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        StringBuilder sb = new StringBuilder();
         
-        PdfWriter.getInstance(document, baos);
-        document.open();
-
-        // Header
-        Paragraph title = new Paragraph("GM Caffe - Financial Report", TITLE_FONT);
-        title.setAlignment(Element.ALIGN_CENTER);
-        document.add(title);
-
-        Paragraph period = new Paragraph("Period: " + periodLabel, HEADER_FONT);
-        period.setAlignment(Element.ALIGN_CENTER);
-        document.add(period);
-
-        document.add(new Paragraph("\n"));
-
+        sb.append("================================================================\n");
+        sb.append("            GM Caffe - Financial Report\n");
+        sb.append("================================================================\n\n");
+        
+        sb.append("Period: ").append(periodLabel).append("\n\n");
+        
         // Summary
-        PdfPTable summaryTable = new PdfPTable(2);
-        summaryTable.setWidthPercentage(60);
-        summaryTable.setHorizontalAlignment(Element.ALIGN_CENTER);
-
-        addDetailRow(summaryTable, "Total Orders:", String.valueOf(orders.size()));
-        addDetailRow(summaryTable, "Total Revenue:", "₹" + totalRevenue);
+        sb.append("----------------------------------------\n");
+        sb.append("SUMMARY\n");
+        sb.append("----------------------------------------\n");
+        sb.append("Total Orders: ").append(orders.size()).append("\n");
+        sb.append("Total Revenue: ₹").append(safeAmount(totalRevenue)).append("\n");
         
-        double avgOrderValue = orders.isEmpty() ? 0 : totalRevenue.doubleValue() / orders.size();
-        addDetailRow(summaryTable, "Avg Order Value:", "₹" + String.format("%.2f", avgOrderValue));
-
-        document.add(summaryTable);
-        document.add(new Paragraph("\n"));
-
-        // Orders Table with Address
-        PdfPTable ordersTable = new PdfPTable(9);
-        ordersTable.setWidthPercentage(100);
-        ordersTable.setWidths(new float[]{2, 3, 3, 2, 3, 2, 3, 2, 2});
-        
-        // Table header
-        String[] headers = {"Bill ID", "Date", "Customer", "Phone", "Address", "Amount", "Items", "Payment", "Status"};
-        for (String header : headers) {
-            PdfPCell cell = new PdfPCell(new Phrase(header, BOLD_FONT));
-            cell.setBackgroundColor(new Color(255, 230, 230));
-            cell.setHorizontalAlignment(Element.ALIGN_CENTER);
-            ordersTable.addCell(cell);
+        if (!orders.isEmpty() && totalRevenue != null) {
+            double avgOrderValue = totalRevenue.doubleValue() / orders.size();
+            sb.append("Average Order Value: ₹").append(String.format("%.2f", avgOrderValue)).append("\n");
         }
-
-        // Table data
+        
+        // Count by payment status
+        long paidCount = orders.stream()
+            .filter(o -> "PAID".equals(o.getPaymentStatus()))
+            .count();
+        long pendingCount = orders.size() - paidCount;
+        
+        sb.append("\nPayment Status:\n");
+        sb.append("  - Paid: ").append(paidCount).append("\n");
+        sb.append("  - Pending: ").append(pendingCount).append("\n");
+        
+        // Count by order type
+        long onlineCount = orders.stream()
+            .filter(o -> "ONLINE".equals(o.getOrderType()))
+            .count();
+        long offlineCount = orders.size() - onlineCount;
+        
+        sb.append("\nOrder Type:\n");
+        sb.append("  - Online: ").append(onlineCount).append("\n");
+        sb.append("  - Offline: ").append(offlineCount).append("\n");
+        
+        sb.append("\n================================================================\n");
+        sb.append("ORDER DETAILS\n");
+        sb.append("================================================================\n\n");
+        
         for (Order order : orders) {
-            ordersTable.addCell(new PdfPCell(new Phrase(order.getBillId(), NORMAL_FONT)));
-            ordersTable.addCell(new PdfPCell(new Phrase(order.getOrderedAt().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")), NORMAL_FONT)));
-            ordersTable.addCell(new PdfPCell(new Phrase(order.getCustomerName(), NORMAL_FONT)));
-            ordersTable.addCell(new PdfPCell(new Phrase(order.getPhone(), NORMAL_FONT)));
-            
-            // Address column
-            String address = order.getAddress() != null ? order.getAddress() : "-";
-            if (address != null && address.length() > 25) {
-                address = address.substring(0, 25) + "...";
-            }
-            ordersTable.addCell(new PdfPCell(new Phrase(address, NORMAL_FONT)));
-            
-            ordersTable.addCell(new PdfPCell(new Phrase("₹" + order.getTotalAmount(), NORMAL_FONT)));
-            
-            String items = order.getItems();
-            if (items != null && items.length() > 25) {
-                items = items.substring(0, 25) + "...";
-            }
-            ordersTable.addCell(new PdfPCell(new Phrase(items != null ? items : "", NORMAL_FONT)));
-            ordersTable.addCell(new PdfPCell(new Phrase(order.getPaymentStatus(), NORMAL_FONT)));
-            ordersTable.addCell(new PdfPCell(new Phrase(order.getStatus().name(), NORMAL_FONT)));
+            sb.append("----------------------------------------\n");
+            sb.append("Bill ID: ").append(safeString(order.getBillId())).append("\n");
+            sb.append("Date: ").append(order.getOrderedAt() != null ? 
+                order.getOrderedAt().format(DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")) : "").append("\n");
+            sb.append("Customer: ").append(safeString(order.getCustomerName())).append("\n");
+            sb.append("Phone: ").append(safeString(order.getPhone())).append("\n");
+            sb.append("Amount: ₹").append(safeAmount(order.getTotalAmount())).append("\n");
+            sb.append("Items: ").append(safeString(order.getItems())).append("\n");
+            sb.append("Payment: ").append(safeString(order.getPaymentStatus())).append("\n");
+            sb.append("Status: ").append(order.getStatus() != null ? order.getStatus().name() : "").append("\n");
+            sb.append("----------------------------------------\n\n");
         }
+        
+        sb.append("================================================================\n");
+        sb.append("Generated by GM Caffe Admin\n");
+        sb.append("================================================================\n");
 
-        document.add(ordersTable);
-
-        // Footer
-        document.add(new Paragraph("\n\n"));
-        Paragraph footer = new Paragraph("Generated by GM Caffe Admin", SMALL_FONT);
-        footer.setAlignment(Element.ALIGN_CENTER);
-        document.add(footer);
-
-        document.close();
-
-        // Set response headers
-        response.setContentType("application/pdf");
-        response.setHeader("Content-Disposition", "attachment; filename=GM_Caffe_Report.pdf");
-        response.setContentLength(baos.size());
-        response.getOutputStream().write(baos.toByteArray());
-        response.getOutputStream().flush();
+        response.setContentType("text/plain;charset=UTF-8");
+        response.setHeader("Content-Disposition", "attachment; filename=GM_Caffe_Report.txt");
+        response.getWriter().write(sb.toString());
     }
-
-    private static void addDetailRow(PdfPTable table, String label, String value) {
-        PdfPCell labelCell = new PdfPCell(new Phrase(label, BOLD_FONT));
-        labelCell.setBorder(Rectangle.NO_BORDER);
-        labelCell.setPadding(5);
-        table.addCell(labelCell);
-
-        PdfPCell valueCell = new PdfPCell(new Phrase(value != null ? value : "", NORMAL_FONT));
-        valueCell.setBorder(Rectangle.NO_BORDER);
-        valueCell.setPadding(5);
-        table.addCell(valueCell);
+    
+    // Helper methods to prevent NullPointerException
+    private static String safeString(String value) {
+        return value != null ? value : "";
+    }
+    
+    private static String safeAmount(BigDecimal value) {
+        return value != null ? value.toString() : "0.00";
     }
 }
+

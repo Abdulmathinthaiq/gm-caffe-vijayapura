@@ -24,10 +24,14 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.File;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -67,13 +71,53 @@ public class AdminController {
     
     @GetMapping("/dashboard")
     public String dashboard(Model model) {
-        model.addAttribute("totalOrders", orderRepository.countTotal());
-        model.addAttribute("pendingOrders", orderRepository.countByStatus(Order.OrderStatus.PENDING));
-        model.addAttribute("totalMenuItems", menuItemRepository.count());
-        model.addAttribute("newReviews", reviewRepository.countByApprovedFalse());
+        // Get totals with null safety
+        long totalOrders = 0;
+        long pendingOrders = 0;
+        long totalMenuItems = 0;
+        long newReviews = 0;
+        double avgRating = 0.0;
         
-        Double avgRating = reviewRepository.getAverageRating();
-        model.addAttribute("avgRating", avgRating != null ? avgRating : 0);
+        try {
+            Long total = orderRepository.countTotal();
+            totalOrders = total != null ? total : 0;
+        } catch (Exception e) {
+            System.err.println("Error getting total orders: " + e.getMessage());
+        }
+        
+        try {
+            Long pending = orderRepository.countByStatus(Order.OrderStatus.PENDING);
+            pendingOrders = pending != null ? pending : 0;
+        } catch (Exception e) {
+            System.err.println("Error getting pending orders: " + e.getMessage());
+        }
+        
+        try {
+            Long count = menuItemRepository.count();
+            totalMenuItems = count != null ? count : 0;
+        } catch (Exception e) {
+            System.err.println("Error getting menu items count: " + e.getMessage());
+        }
+        
+        try {
+            Long reviews = reviewRepository.countByApprovedFalse();
+            newReviews = reviews != null ? reviews : 0;
+        } catch (Exception e) {
+            System.err.println("Error getting pending reviews: " + e.getMessage());
+        }
+        
+        try {
+            Double rating = reviewRepository.getAverageRating();
+            avgRating = rating != null ? rating : 0.0;
+        } catch (Exception e) {
+            System.err.println("Error getting average rating: " + e.getMessage());
+        }
+        
+        model.addAttribute("totalOrders", totalOrders);
+        model.addAttribute("pendingOrders", pendingOrders);
+        model.addAttribute("totalMenuItems", totalMenuItems);
+        model.addAttribute("newReviews", newReviews);
+        model.addAttribute("avgRating", avgRating);
         
         return "admin/dashboard";
     }
@@ -81,100 +125,188 @@ public class AdminController {
     // Menu Management
     @GetMapping("/menu")
     public String manageMenu(Model model) {
-        model.addAttribute("items", menuItemRepository.findAll());
+        try {
+            List<MenuItem> items = menuItemRepository.findAll();
+            model.addAttribute("items", items != null ? items : Collections.emptyList());
+        } catch (Exception e) {
+            model.addAttribute("items", Collections.emptyList());
+        }
         model.addAttribute("item", new MenuItem());
         return "admin/menu";
     }
     
     @PostMapping("/menu/save")
-    public String saveMenu(@ModelAttribute MenuItem item) {
-        if (item.getId() != null) {
-            MenuItem existing = menuItemRepository.findById(item.getId()).orElse(item);
-            item.setImageUrl(existing.getImageUrl());
+    public String saveMenu(@ModelAttribute MenuItem item, RedirectAttributes redirectAttributes) {
+        try {
+            // Validate required fields
+            if (item.getName() == null || item.getName().trim().isEmpty()) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Menu item name is required.");
+                return "redirect:/admin/menu";
+            }
+            if (item.getPrice() == null) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Price is required.");
+                return "redirect:/admin/menu";
+            }
+            
+            if (item.getId() != null) {
+                MenuItem existing = menuItemRepository.findById(item.getId()).orElse(item);
+                item.setImageUrl(existing.getImageUrl());
+            }
+            menuItemRepository.save(item);
+            redirectAttributes.addFlashAttribute("successMessage", "Menu item saved successfully!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Error saving menu item: " + e.getMessage());
         }
-        menuItemRepository.save(item);
         return "redirect:/admin/menu";
     }
     
     @GetMapping("/menu/edit/{id}")
     public String editMenu(@PathVariable Long id, Model model) {
-        MenuItem item = menuItemRepository.findById(id).orElse(new MenuItem());
-        model.addAttribute("item", item);
-        model.addAttribute("items", menuItemRepository.findAll());
+        try {
+            MenuItem item = menuItemRepository.findById(id).orElse(new MenuItem());
+            model.addAttribute("item", item);
+        } catch (Exception e) {
+            model.addAttribute("item", new MenuItem());
+        }
+        
+        try {
+            List<MenuItem> items = menuItemRepository.findAll();
+            model.addAttribute("items", items != null ? items : Collections.emptyList());
+        } catch (Exception e) {
+            model.addAttribute("items", Collections.emptyList());
+        }
         return "admin/menu";
     }
     
     @GetMapping("/menu/delete/{id}")
-    public String deleteMenu(@PathVariable Long id) {
-        menuItemRepository.deleteById(id);
+    public String deleteMenu(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            menuItemRepository.deleteById(id);
+            redirectAttributes.addFlashAttribute("successMessage", "Menu item deleted successfully!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Error deleting menu item: " + e.getMessage());
+        }
         return "redirect:/admin/menu";
     }
     
     // Order Management
     @GetMapping("/orders")
     public String manageOrders(Model model) {
-        model.addAttribute("orders", orderRepository.findAllByOrderByOrderedAtDesc());
-        model.addAttribute("menuItems", menuItemRepository.findAll());
+        try {
+            List<Order> orders = orderRepository.findAllByOrderByOrderedAtDesc();
+            model.addAttribute("orders", orders != null ? orders : Collections.emptyList());
+        } catch (Exception e) {
+            model.addAttribute("orders", Collections.emptyList());
+        }
+        
+        try {
+            List<MenuItem> items = menuItemRepository.findAll();
+            model.addAttribute("menuItems", items != null ? items : Collections.emptyList());
+        } catch (Exception e) {
+            model.addAttribute("menuItems", Collections.emptyList());
+        }
         return "admin/orders";
     }
     
     @PostMapping("/orders/{id}/status")
-    public String updateOrderStatus(@PathVariable Long id, @RequestParam String status) {
-        Order order = orderRepository.findById(id).orElseThrow();
-        order.setStatus(Order.OrderStatus.valueOf(status));
-        orderRepository.save(order);
+    public String updateOrderStatus(@PathVariable Long id, @RequestParam String status, RedirectAttributes redirectAttributes) {
+        try {
+            Order order = orderRepository.findById(id).orElseThrow(() -> new RuntimeException("Order not found"));
+            order.setStatus(Order.OrderStatus.valueOf(status));
+            orderRepository.save(order);
+            redirectAttributes.addFlashAttribute("successMessage", "Order status updated!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Error updating order: " + e.getMessage());
+        }
         return "redirect:/admin/orders";
     }
     
     // Review Management
     @GetMapping("/reviews")
     public String manageReviews(Model model) {
-        List<Review> allReviews = reviewRepository.findAll();
-        System.out.println("DEBUG: Admin - Retrieved " + allReviews.size() + " reviews from database");
-        for (Review review : allReviews) {
-            System.out.println("DEBUG: Review ID: " + review.getId() + ", Name: " + review.getCustomerName() + ", Approved: " + review.isApproved());
+        try {
+            List<Review> allReviews = reviewRepository.findAll();
+            System.out.println("DEBUG: Admin - Retrieved " + (allReviews != null ? allReviews.size() : 0) + " reviews from database");
+            
+            if (allReviews != null) {
+                for (Review review : allReviews) {
+                    System.out.println("DEBUG: Review ID: " + review.getId() + ", Name: " + review.getCustomerName() + ", Approved: " + review.isApproved());
+                }
+            }
+            model.addAttribute("reviews", allReviews != null ? allReviews : Collections.emptyList());
+        } catch (Exception e) {
+            System.out.println("DEBUG: Error fetching reviews: " + e.getMessage());
+            model.addAttribute("reviews", Collections.emptyList());
         }
-        model.addAttribute("reviews", allReviews);
         return "admin/reviews";
     }
 
     
     @PostMapping("/reviews/{id}/approve")
-    public String approveReview(@PathVariable Long id) {
-        Review review = reviewRepository.findById(id).orElseThrow();
-        review.setApproved(true);
-        reviewRepository.save(review);
+    public String approveReview(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            Review review = reviewRepository.findById(id).orElseThrow(() -> new RuntimeException("Review not found"));
+            review.setApproved(true);
+            reviewRepository.save(review);
+            redirectAttributes.addFlashAttribute("successMessage", "Review approved!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Error approving review: " + e.getMessage());
+        }
         return "redirect:/admin/reviews";
     }
     
     @PostMapping("/reviews/{id}/delete")
-    public String deleteReview(@PathVariable Long id) {
-        reviewRepository.deleteById(id);
+    public String deleteReview(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            reviewRepository.deleteById(id);
+            redirectAttributes.addFlashAttribute("successMessage", "Review deleted!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Error deleting review: " + e.getMessage());
+        }
         return "redirect:/admin/reviews";
     }
     
     // User Management
     @GetMapping("/users")
     public String manageUsers(Model model) {
-        model.addAttribute("users", userRepository.findAll());
+        try {
+            List<User> users = userRepository.findAll();
+            model.addAttribute("users", users != null ? users : Collections.emptyList());
+        } catch (Exception e) {
+            model.addAttribute("users", Collections.emptyList());
+        }
         return "admin/users";
     }
     
     @PostMapping("/users/save")
-    public String saveUser(@ModelAttribute User user, @RequestParam String password) {
-        if (user.getId() == null || password != null && !password.isEmpty()) {
-            user.setPassword(passwordEncoder.encode(password));
-        } else {
-            User existing = userRepository.findById(user.getId()).orElse(user);
-            user.setPassword(existing.getPassword());
+    public String saveUser(@ModelAttribute User user, @RequestParam String password, RedirectAttributes redirectAttributes) {
+        try {
+            if (user.getId() == null || (password != null && !password.isEmpty())) {
+                if (password == null || password.isEmpty()) {
+                    redirectAttributes.addFlashAttribute("errorMessage", "Password is required for new users.");
+                    return "redirect:/admin/users";
+                }
+                user.setPassword(passwordEncoder.encode(password));
+            } else {
+                User existing = userRepository.findById(user.getId()).orElse(user);
+                user.setPassword(existing.getPassword());
+            }
+            userRepository.save(user);
+            redirectAttributes.addFlashAttribute("successMessage", "User saved successfully!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Error saving user: " + e.getMessage());
         }
-        userRepository.save(user);
         return "redirect:/admin/users";
     }
     
     @GetMapping("/users/delete/{id}")
-    public String deleteUser(@PathVariable Long id) {
-        userRepository.deleteById(id);
+    public String deleteUser(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            userRepository.deleteById(id);
+            redirectAttributes.addFlashAttribute("successMessage", "User deleted successfully!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Error deleting user: " + e.getMessage());
+        }
         return "redirect:/admin/users";
     }
     
@@ -185,130 +317,124 @@ public class AdminController {
                                     @RequestParam String items,
                                     @RequestParam String totalAmount,
                                     @RequestParam(defaultValue = "") String address,
-                                    @RequestParam(defaultValue = "") String deliveryNotes) {
-        Order order = new Order();
-        order.setCustomerName(customerName);
-        order.setPhone(phone);
-        order.setItems(items);
-        order.setTotalAmount(new java.math.BigDecimal(totalAmount));
-        order.setAddress(address);
-        order.setDeliveryNotes(deliveryNotes);
-        order.setOrderType("OFFLINE");
-        order.setPaymentStatus("PAID");
-        order.setStatus(Order.OrderStatus.DELIVERED);
-        
-        orderRepository.save(order);
-        return "redirect:/admin/orders?printBill=" + order.getId();
+                                    @RequestParam(defaultValue = "") String deliveryNotes,
+                                    RedirectAttributes redirectAttributes) {
+        try {
+            Order order = new Order();
+            order.setCustomerName(customerName);
+            order.setPhone(phone);
+            order.setItems(items);
+            order.setTotalAmount(new BigDecimal(totalAmount));
+            order.setAddress(address);
+            order.setDeliveryNotes(deliveryNotes);
+            order.setOrderType("OFFLINE");
+            order.setPaymentStatus("PAID");
+            order.setStatus(Order.OrderStatus.DELIVERED);
+            
+            Order savedOrder = orderRepository.save(order);
+            return "redirect:/admin/orders?printBill=" + savedOrder.getId();
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Error creating order: " + e.getMessage());
+            return "redirect:/admin/orders";
+        }
     }
     
     // Print Bill
     @GetMapping("/orders/{id}/print")
     public String printBill(@PathVariable Long id, Model model) {
-        Order order = orderRepository.findById(id).orElseThrow();
-        model.addAttribute("order", order);
-        
-        String billMessage = "Thank you for your order from GM Caffe!\n\n" +
-            "Bill ID: " + order.getBillId() + "\n" +
-            "Items: " + order.getItems() + "\n" +
-            "Total: ₹" + order.getTotalAmount() + "\n" +
-            "Payment Status: " + order.getPaymentStatus() + "\n\n" +
-            "Thank you for visiting GM Caffe!";
-        model.addAttribute("billMessage", billMessage);
-        
+        try {
+            Order order = orderRepository.findById(id).orElseThrow(() -> new RuntimeException("Order not found"));
+            model.addAttribute("order", order);
+            
+            String billMessage = "Thank you for your order from GM Caffe!\n\n" +
+                "Bill ID: " + (order.getBillId() != null ? order.getBillId() : "N/A") + "\n" +
+                "Items: " + (order.getItems() != null ? order.getItems() : "N/A") + "\n" +
+                "Total: ₹" + (order.getTotalAmount() != null ? order.getTotalAmount() : "0") + "\n" +
+                "Payment Status: " + (order.getPaymentStatus() != null ? order.getPaymentStatus() : "N/A") + "\n\n" +
+                "Thank you for visiting GM Caffe!";
+            model.addAttribute("billMessage", billMessage);
+        } catch (Exception e) {
+            model.addAttribute("errorMessage", "Error loading bill: " + e.getMessage());
+        }
         return "admin/bill";
     }
     
     // Send Bill via WhatsApp (Text Message)
     @GetMapping("/orders/{id}/whatsapp")
     public String sendToWhatsApp(@PathVariable Long id, Model model) {
-        Order order = orderRepository.findById(id).orElseThrow();
-        
-        String phone = order.getPhone().replaceAll("\\D", "");
-        if (phone.length() == 10) {
-            phone = "91" + phone;
+        try {
+            Order order = orderRepository.findById(id).orElseThrow(() -> new RuntimeException("Order not found"));
+            
+            String phone = order.getPhone() != null ? order.getPhone().replaceAll("\\D", "") : "";
+            if (phone.length() == 10) {
+                phone = "91" + phone;
+            }
+            
+            String addressLine = "";
+            if (order.getAddress() != null && !order.getAddress().trim().isEmpty()) {
+                addressLine = "*Address:* " + order.getAddress() + "\n\n";
+            }
+            
+            String billMessage = "🧾 *GM Caffe - Bill Receipt*\n\n" +
+                "━━━━━━━━━━━━━━━━━━\n\n" +
+                "*Bill ID:* " + (order.getBillId() != null ? order.getBillId() : "N/A") + "\n" +
+                "*Date:* " + (order.getOrderedAt() != null ? order.getOrderedAt().toLocalDate().toString() : "N/A") + "\n" +
+                "*Customer:* " + (order.getCustomerName() != null ? order.getCustomerName() : "N/A") + "\n" +
+                addressLine +
+                "━━━━━━━━━━━━━━━━━━\n\n" +
+                "*Order Details:*\n" + (order.getItems() != null ? order.getItems() : "N/A") + "\n\n" +
+                "━━━━━━━━━━━━━━━━━━\n\n" +
+                "*Total Amount:* ₹" + (order.getTotalAmount() != null ? order.getTotalAmount() : "0") + "\n" +
+                "*Payment Status:* " + (order.getPaymentStatus() != null ? order.getPaymentStatus() : "N/A") + "\n\n" +
+                "━━━━━━━━━━━━━━━━━━\n\n" +
+                "Thank you for visiting *GM Caffe*! ☕\n" +
+                "Please visit again!";
+            
+            return "redirect:https://wa.me/" + phone + "?text=" + java.net.URLEncoder.encode(billMessage);
+        } catch (Exception e) {
+            return "redirect:/admin/orders?error=true";
         }
-        
-        // Build address line if available
-        String addressLine = "";
-        if (order.getAddress() != null && !order.getAddress().trim().isEmpty()) {
-            addressLine = "*Address:* " + order.getAddress() + "\n\n";
-        }
-        
-        String billMessage = "🧾 *GM Caffe - Bill Receipt*\n\n" +
-            "━━━━━━━━━━━━━━━━━━\n\n" +
-            "*Bill ID:* " + order.getBillId() + "\n" +
-            "*Date:* " + order.getOrderedAt().toLocalDate() + "\n" +
-            "*Customer:* " + order.getCustomerName() + "\n" +
-            addressLine +
-            "━━━━━━━━━━━━━━━━━━\n\n" +
-            "*Order Details:*\n" + order.getItems() + "\n\n" +
-            "━━━━━━━━━━━━━━━━━━\n\n" +
-            "*Total Amount:* ₹" + order.getTotalAmount() + "\n" +
-            "*Payment Status:* " + order.getPaymentStatus() + "\n\n" +
-            "━━━━━━━━━━━━━━━━━━\n\n" +
-            "Thank you for visiting *GM Caffe*! ☕\n" +
-            "Please visit again!";
-        
-        return "redirect:https://wa.me/" + phone + "?text=" + java.net.URLEncoder.encode(billMessage);
     }
     
-    // Send Bill via WhatsApp with PDF
-    @GetMapping("/orders/{id}/whatsapp-pdf")
-    public String sendToWhatsAppPdf(@PathVariable Long id, jakarta.servlet.http.HttpServletResponse response) throws Exception {
-        Order order = orderRepository.findById(id).orElseThrow();
-        
-        String phone = order.getPhone().replaceAll("\\D", "");
-        if (phone.length() == 10) {
-            phone = "91" + phone;
-        }
-        
-        // Build address line if available
-        String addressLine = "";
-        if (order.getAddress() != null && !order.getAddress().trim().isEmpty()) {
-            addressLine = "*Address:* " + order.getAddress() + "\n\n";
-        }
-        
-        String billMessage = "🧾 *GM Caffe - Bill Receipt*\n\n" +
-            "━━━━━━━━━━━━━━━━━━\n\n" +
-            "*Bill ID:* " + order.getBillId() + "\n" +
-            "*Date:* " + order.getOrderedAt().toLocalDate() + "\n" +
-            "*Customer:* " + order.getCustomerName() + "\n" +
-            addressLine +
-            "━━━━━━━━━━━━━━━━━━\n\n" +
-            "*Order Details:*\n" + order.getItems() + "\n\n" +
-            "━━━━━━━━━━━━━━━━━━\n\n" +
-            "*Total Amount:* ₹" + order.getTotalAmount() + "\n" +
-            "*Payment Status:* " + order.getPaymentStatus() + "\n\n" +
-            "━━━━━━━━━━━━━━━━━━\n\n" +
-            "Thank you for visiting *GM Caffe*! ☕\n" +
-            "Please visit again!";
-        
-        // Generate PDF and redirect to WhatsApp
-        // Note: For PDF sharing via WhatsApp, the PDF needs to be uploaded to a server
-        // For now, we'll redirect to WhatsApp with the text message
-        return "redirect:https://wa.me/" + phone + "?text=" + java.net.URLEncoder.encode(billMessage);
-    }
-    
-    // Download Bill PDF
+    // Download Bill as Text
     @GetMapping("/orders/{id}/pdf")
-    public void downloadPdf(@PathVariable Long id, jakarta.servlet.http.HttpServletResponse response) throws Exception {
-        Order order = orderRepository.findById(id).orElseThrow();
-        PdfService.generateBillPdf(order, response);
+    public void downloadPdf(@PathVariable Long id, jakarta.servlet.http.HttpServletResponse response) {
+        try {
+            Order order = orderRepository.findById(id).orElseThrow(() -> new RuntimeException("Order not found"));
+            PdfService.generateBillPdf(order, response);
+        } catch (Exception e) {
+            try {
+                response.setContentType("text/plain");
+                response.getWriter().write("Error generating bill: " + e.getMessage());
+            } catch (IOException ex) {
+                System.err.println("Error writing response: " + ex.getMessage());
+            }
+        }
     }
     
     // Update Payment Status
     @PostMapping("/orders/{id}/payment")
-    public String updatePaymentStatus(@PathVariable Long id, @RequestParam String paymentStatus) {
-        Order order = orderRepository.findById(id).orElseThrow();
-        order.setPaymentStatus(paymentStatus);
-        orderRepository.save(order);
+    public String updatePaymentStatus(@PathVariable Long id, @RequestParam String paymentStatus, RedirectAttributes redirectAttributes) {
+        try {
+            Order order = orderRepository.findById(id).orElseThrow(() -> new RuntimeException("Order not found"));
+            order.setPaymentStatus(paymentStatus);
+            orderRepository.save(order);
+            redirectAttributes.addFlashAttribute("successMessage", "Payment status updated!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Error updating payment: " + e.getMessage());
+        }
         return "redirect:/admin/orders";
     }
     
     // Delete Order
     @GetMapping("/orders/delete/{id}")
-    public String deleteOrder(@PathVariable Long id) {
-        orderRepository.deleteById(id);
+    public String deleteOrder(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            orderRepository.deleteById(id);
+            redirectAttributes.addFlashAttribute("successMessage", "Order deleted!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Error deleting order: " + e.getMessage());
+        }
         return "redirect:/admin/orders";
     }
     
@@ -357,14 +483,34 @@ public class AdminController {
                 model.addAttribute("periodLabel", "Today");
         }
         
-        List<Order> orders = orderRepository.findByOrderedAtBetween(startDateTime, endDateTime);
-        java.math.BigDecimal totalRevenue = orderRepository.getTotalRevenueBetween(startDateTime, endDateTime);
-        long totalOrders = orders.size();
-        java.math.BigDecimal avgOrderValue = totalOrders > 0 ? 
-            totalRevenue.divide(java.math.BigDecimal.valueOf(totalOrders), 2, java.math.RoundingMode.HALF_UP) : 
-            java.math.BigDecimal.ZERO;
+        List<Order> orders;
+        BigDecimal totalRevenue = BigDecimal.ZERO;
+        long totalOrders = 0;
+        BigDecimal avgOrderValue = BigDecimal.ZERO;
         
-        long paidCount = orders.stream().filter(o -> "PAID".equals(o.getPaymentStatus())).count();
+        try {
+            orders = orderRepository.findByOrderedAtBetween(startDateTime, endDateTime);
+            if (orders != null) {
+                totalOrders = orders.size();
+                totalRevenue = orderRepository.getTotalRevenueBetween(startDateTime, endDateTime);
+                if (totalRevenue == null) {
+                    totalRevenue = BigDecimal.ZERO;
+                }
+                if (totalOrders > 0) {
+                    avgOrderValue = totalRevenue.divide(BigDecimal.valueOf(totalOrders), 2, RoundingMode.HALF_UP);
+                }
+            } else {
+                orders = Collections.emptyList();
+            }
+        } catch (Exception e) {
+            System.err.println("Error fetching report data: " + e.getMessage());
+            orders = Collections.emptyList();
+        }
+        
+        long paidCount = 0;
+        if (orders != null) {
+            paidCount = orders.stream().filter(o -> "PAID".equals(o.getPaymentStatus())).count();
+        }
         long paidPercentage = totalOrders > 0 ? (paidCount * 100) / totalOrders : 0;
         
         model.addAttribute("period", period);
@@ -379,26 +525,24 @@ public class AdminController {
         return "admin/reports";
     }
     
-    // Export PDF
+    // Export Report
     @GetMapping("/reports/export/pdf")
     public void exportPdf(
             @RequestParam(required = false, defaultValue = "daily") String period,
             @RequestParam(required = false) String startDate,
             @RequestParam(required = false) String endDate,
-            @RequestParam(required = false, defaultValue = "Today") String periodLabel,
             jakarta.servlet.http.HttpServletResponse response) throws Exception {
         
         List<Order> orders = getOrdersForPeriod(period, startDate, endDate);
-        java.math.BigDecimal totalRevenue = orders.stream().map(Order::getTotalAmount).reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+        BigDecimal totalRevenue = orders.stream()
+            .map(Order::getTotalAmount)
+            .filter(amount -> amount != null)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
         
-        // Get period label for the report
         String label = getPeriodLabel(period, startDate, endDate);
-        
-        // Generate actual PDF using PdfService
         PdfService.generateReportPdf(orders, totalRevenue, label, response);
     }
     
-    // Helper method to get period label
     private String getPeriodLabel(String period, String startDate, String endDate) {
         java.time.LocalDate today = java.time.LocalDate.now();
         
@@ -431,47 +575,18 @@ public class AdminController {
         StringBuilder content = new StringBuilder();
         content.append("Bill ID\tDate\tCustomer\tPhone\tOrder Type\tItems\tTotal Amount\tPayment Status\tStatus\n");
         
-        for (Order order : orders) {
-            content.append(order.getBillId()).append("\t").append(order.getOrderedAt()).append("\t")
-                   .append(order.getCustomerName()).append("\t").append(order.getPhone()).append("\t")
-                   .append(order.getOrderType()).append("\t").append(order.getItems().replaceAll("\n", " ")).append("\t")
-                   .append(order.getTotalAmount()).append("\t").append(order.getPaymentStatus()).append("\t")
-                   .append(order.getStatus()).append("\n");
-        }
-        
-        response.getWriter().write(content.toString());
-    }
-    
-    // Export Word
-    @GetMapping("/reports/export/word")
-    public void exportWord(
-            @RequestParam(required = false, defaultValue = "daily") String period,
-            @RequestParam(required = false) String startDate,
-            @RequestParam(required = false) String endDate,
-            jakarta.servlet.http.HttpServletResponse response) throws Exception {
-        
-        List<Order> orders = getOrdersForPeriod(period, startDate, endDate);
-        java.math.BigDecimal totalRevenue = orders.stream().map(Order::getTotalAmount).reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
-        
-        response.setContentType("application/msword");
-        response.setHeader("Content-Disposition", "attachment; filename=GM_Caffe_Report.doc");
-        
-        StringBuilder content = new StringBuilder();
-        content.append("GM CAFFE - FINANCIAL REPORT\n");
-        content.append("=====================================\n\n");
-        content.append("Total Orders: ").append(orders.size()).append("\n");
-        content.append("Total Revenue: Rs.").append(totalRevenue).append("\n\n");
-        content.append("ORDER DETAILS\n");
-        content.append("=====================================\n");
-        
-        for (Order order : orders) {
-            content.append("Bill ID: ").append(order.getBillId()).append("\n");
-            content.append("Date: ").append(order.getOrderedAt()).append("\n");
-            content.append("Customer: ").append(order.getCustomerName()).append("\n");
-            content.append("Phone: ").append(order.getPhone()).append("\n");
-            content.append("Amount: Rs.").append(order.getTotalAmount()).append("\n");
-            content.append("Payment: ").append(order.getPaymentStatus()).append("\n");
-            content.append("-----------------------------------\n");
+        if (orders != null) {
+            for (Order order : orders) {
+                content.append(safeString(order.getBillId())).append("\t")
+                       .append(order.getOrderedAt() != null ? order.getOrderedAt().toString() : "").append("\t")
+                       .append(safeString(order.getCustomerName())).append("\t")
+                       .append(safeString(order.getPhone())).append("\t")
+                       .append(safeString(order.getOrderType())).append("\t")
+                       .append(safeString(order.getItems()).replace("\n", " ")).append("\t")
+                       .append(order.getTotalAmount() != null ? order.getTotalAmount().toString() : "0").append("\t")
+                       .append(safeString(order.getPaymentStatus())).append("\t")
+                       .append(order.getStatus() != null ? order.getStatus().name() : "").append("\n");
+            }
         }
         
         response.getWriter().write(content.toString());
@@ -493,12 +608,18 @@ public class AdminController {
         StringBuilder content = new StringBuilder();
         content.append("Bill ID,Date,Customer,Phone,Order Type,Items,Total Amount,Payment Status,Status\n");
         
-        for (Order order : orders) {
-            content.append(order.getBillId()).append(",").append(order.getOrderedAt()).append(",")
-                   .append("\"").append(order.getCustomerName()).append("\",").append(order.getPhone()).append(",")
-                   .append(order.getOrderType()).append(",").append("\"").append(order.getItems().replaceAll("\n", " ")).append("\",")
-                   .append(order.getTotalAmount()).append(",").append(order.getPaymentStatus()).append(",")
-                   .append(order.getStatus()).append("\n");
+        if (orders != null) {
+            for (Order order : orders) {
+                content.append(safeString(order.getBillId())).append(",")
+                       .append(order.getOrderedAt() != null ? order.getOrderedAt().toString() : "").append(",")
+                       .append("\"").append(safeString(order.getCustomerName())).append("\",")
+                       .append(safeString(order.getPhone())).append(",")
+                       .append(safeString(order.getOrderType())).append(",")
+                       .append("\"").append(safeString(order.getItems()).replace("\n", " ")).append("\",")
+                       .append(order.getTotalAmount() != null ? order.getTotalAmount().toString() : "0").append(",")
+                       .append(safeString(order.getPaymentStatus())).append(",")
+                       .append(order.getStatus() != null ? order.getStatus().name() : "").append("\n");
+            }
         }
         
         response.getWriter().write(content.toString());
@@ -536,7 +657,12 @@ public class AdminController {
                 endDateTime = today.atTime(23, 59, 59);
         }
         
-        return orderRepository.findByOrderedAtBetween(startDateTime, endDateTime);
+        try {
+            return orderRepository.findByOrderedAtBetween(startDateTime, endDateTime);
+        } catch (Exception e) {
+            System.err.println("Error fetching orders: " + e.getMessage());
+            return Collections.emptyList();
+        }
     }
     
     // ==================== OFFER MANAGEMENT ====================
@@ -544,7 +670,12 @@ public class AdminController {
     // Get all offers
     @GetMapping("/offers")
     public String manageOffers(Model model) {
-        model.addAttribute("offers", offerRepository.findAllByOrderByDisplayOrderAsc());
+        try {
+            List<Offer> offers = offerRepository.findAllByOrderByDisplayOrderAsc();
+            model.addAttribute("offers", offers != null ? offers : Collections.emptyList());
+        } catch (Exception e) {
+            model.addAttribute("offers", Collections.emptyList());
+        }
         model.addAttribute("offer", new Offer());
         return "admin/offers";
     }
@@ -556,7 +687,6 @@ public class AdminController {
                            RedirectAttributes redirectAttributes) {
         try {
             if (file != null && !file.isEmpty()) {
-                // Get the uploads directory path
                 String uploadDir = servletContext.getRealPath("/uploads");
                 if (uploadDir == null) {
                     uploadDir = System.getProperty("user.dir") + "/src/main/resources/static/uploads";
@@ -567,7 +697,6 @@ public class AdminController {
                     uploadDirFile.mkdirs();
                 }
                 
-                // Generate unique filename
                 String originalFilename = file.getOriginalFilename();
                 String extension = "";
                 if (originalFilename != null && originalFilename.contains(".")) {
@@ -575,11 +704,9 @@ public class AdminController {
                 }
                 String newFilename = UUID.randomUUID().toString() + extension;
                 
-                // Save file
                 Path filePath = Paths.get(uploadDir, newFilename);
                 Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
                 
-                // Set the image URL
                 offer.setImageUrl("/uploads/" + newFilename);
             }
             
@@ -602,9 +729,19 @@ public class AdminController {
     // Edit offer
     @GetMapping("/offers/edit/{id}")
     public String editOffer(@PathVariable Long id, Model model) {
-        Offer offer = offerRepository.findById(id).orElse(new Offer());
-        model.addAttribute("offer", offer);
-        model.addAttribute("offers", offerRepository.findAllByOrderByDisplayOrderAsc());
+        try {
+            Offer offer = offerRepository.findById(id).orElse(new Offer());
+            model.addAttribute("offer", offer);
+        } catch (Exception e) {
+            model.addAttribute("offer", new Offer());
+        }
+        
+        try {
+            List<Offer> offers = offerRepository.findAllByOrderByDisplayOrderAsc();
+            model.addAttribute("offers", offers != null ? offers : Collections.emptyList());
+        } catch (Exception e) {
+            model.addAttribute("offers", Collections.emptyList());
+        }
         return "admin/offers";
     }
     
@@ -623,9 +760,20 @@ public class AdminController {
     // Toggle offer active status
     @PostMapping("/offers/{id}/toggle")
     public String toggleOfferStatus(@PathVariable Long id, RedirectAttributes redirectAttributes) {
-        Offer offer = offerRepository.findById(id).orElseThrow();
-        offer.setActive(!offer.isActive());
-        offerRepository.save(offer);
+        try {
+            Offer offer = offerRepository.findById(id).orElseThrow(() -> new RuntimeException("Offer not found"));
+            offer.setActive(!offer.isActive());
+            offerRepository.save(offer);
+            redirectAttributes.addFlashAttribute("successMessage", "Offer status updated!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Error updating offer: " + e.getMessage());
+        }
         return "redirect:/admin/offers";
     }
+    
+    // Helper method for null-safe string
+    private String safeString(String value) {
+        return value != null ? value : "";
+    }
 }
+
