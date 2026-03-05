@@ -1,6 +1,6 @@
 [build]
 builder = "docker"
-buildImage = "maven:3.9-eclipse-temurin-17"
+dockerfilePath = "Dockerfile"
 
 [deploy]
 numReplicas = 1
@@ -10,9 +10,4 @@ restartPolicyMaxRetries = 10
 [deploy.healthcheck]
 path = "/"
 port = 8080
-interval = 30
-timeout = 10
-
-[Variables]
-SPRING_PROFILES_ACTIVE = "prod"
 
