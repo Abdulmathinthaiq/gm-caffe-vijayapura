@@ -12,22 +12,26 @@ WORKDIR /app
 # Set production profile
 ENV SPRING_PROFILES_ACTIVE=prod
 
-# Print environment variables for debugging (remove in production)
-RUN echo "=== Environment Variables ===" && \
-    env | grep -E "(MYSQL|DB_|SPRING)" || true
+# Create necessary directories
+RUN mkdir -p /app/static /app/templates /app/static/uploads
 
 # Copy the JAR file from build stage
 COPY --from=build /app/target/gm-caffe-site-1.0.0.jar app.jar
+
+# Copy startup script
 COPY startup.sh /startup.sh
 RUN chmod +x /startup.sh
 
-# Create static directory and copy static files/templates
-RUN mkdir -p /app/static /app/templates
+# Copy static files and templates from build stage
 COPY --from=build /app/src/main/resources/static /app/static
 COPY --from=build /app/src/main/resources/templates /app/templates
 
 # Expose port
 EXPOSE 8080
 
-# Run the application with debug script
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD wget --quiet --tries=1 --spider http://localhost:8080/ || exit 1
+
+# Run the application
 ENTRYPOINT ["/startup.sh"]
