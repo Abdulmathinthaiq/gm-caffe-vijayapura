@@ -17,16 +17,34 @@ echo "PORT: ${PORT:-NOT SET}"
 echo "========================================="
 
 # Use internal MySQL hostname for Railway internal networking
-# This avoids the public proxy IP restrictions
-if [ -n "$MYSQLHOST" ]; then
-    echo "Using internal MySQL hostname: $MYSQLHOST"
+# Priority: MYSQLHOST (internal) > MYSQL_PUBLIC_URL (proxy)
+if [ -n "$MYSQLHOST" ] && [ "$MYSQLHOST" != "mysql.railway.internal" ]; then
+    # MYSQLHOST is set and is NOT the internal hostname, use it
+    echo "Using MYSQLHOST: $MYSQLHOST"
+    DB_HOST="$MYSQLHOST"
+    DB_PORT="${MYSQLPORT:-3306}"
+    DB_NAME="${MYSQLDATABASE:-railway}"
+    DB_USER="$MYSQLUSER"
+    DB_PASS="$MYSQLPASSWORD"
     
-    # Construct JDBC URL with internal hostname
-    JDBC_URL="jdbc:mysql://${MYSQLHOST}:${MYSQLPORT}/${MYSQLDATABASE}?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true"
+    JDBC_URL="jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true"
     
     echo "JDBC URL: $JDBC_URL"
     
-    # Run with explicit system properties
+    exec java \
+        -Dspring.datasource.url="$JDBC_URL" \
+        -Dspring.datasource.username="$DB_USER" \
+        -Dspring.datasource.password="$DB_PASS" \
+        -jar app.jar
+        
+elif [ -n "$MYSQLHOST" ]; then
+    # MYSQLHOST is mysql.railway.internal - use internal networking
+    echo "Using internal MySQL hostname: $MYSQLHOST"
+    
+    JDBC_URL="jdbc:mysql://${MYSQLHOST}:${MYSQLPORT:-3306}/${MYSQLDATABASE:-railway}?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true"
+    
+    echo "JDBC URL: $JDBC_URL"
+    
     exec java \
         -Dspring.datasource.url="$JDBC_URL" \
         -Dspring.datasource.username="$MYSQLUSER" \
