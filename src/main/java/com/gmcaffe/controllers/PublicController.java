@@ -1,13 +1,15 @@
 package com.gmcaffe.controllers;
 
-import com.gmcaffe.repositories.MenuItemRepository;
-import com.gmcaffe.repositories.OfferRepository;
-import com.gmcaffe.repositories.OrderRepository;
-import com.gmcaffe.repositories.ReviewRepository;
+import com.gmcaffe.models.Gallery;
 import com.gmcaffe.models.MenuItem;
 import com.gmcaffe.models.Offer;
 import com.gmcaffe.models.Order;
 import com.gmcaffe.models.Review;
+import com.gmcaffe.repositories.GalleryRepository;
+import com.gmcaffe.repositories.MenuItemRepository;
+import com.gmcaffe.repositories.OfferRepository;
+import com.gmcaffe.repositories.OrderRepository;
+import com.gmcaffe.repositories.ReviewRepository;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -24,15 +26,18 @@ public class PublicController {
     private final OrderRepository orderRepository;
     private final ReviewRepository reviewRepository;
     private final OfferRepository offerRepository;
+    private final GalleryRepository galleryRepository;
     
     public PublicController(MenuItemRepository menuItemRepository, 
                            OrderRepository orderRepository,
                            ReviewRepository reviewRepository,
-                           OfferRepository offerRepository) {
+                           OfferRepository offerRepository,
+                           GalleryRepository galleryRepository) {
         this.menuItemRepository = menuItemRepository;
         this.orderRepository = orderRepository;
         this.reviewRepository = reviewRepository;
         this.offerRepository = offerRepository;
+        this.galleryRepository = galleryRepository;
     }
 
     @GetMapping("/")
@@ -120,7 +125,21 @@ public class PublicController {
     }
     
     @GetMapping("/gallery")
-    public String gallery() {
+    public String gallery(Model model) {
+        // Get gallery items from database with null safety
+        List<Gallery> galleryItems;
+        try {
+            galleryItems = galleryRepository.findAllByOrderByDisplayOrderAsc();
+            // Filter for active items only (if isActive field exists)
+            if (galleryItems == null) {
+                galleryItems = Collections.emptyList();
+            }
+        } catch (Exception e) {
+            System.err.println("Error fetching gallery items: " + e.getMessage());
+            galleryItems = Collections.emptyList();
+        }
+        model.addAttribute("galleryItems", galleryItems);
+        
         return "gallery";
     }
     

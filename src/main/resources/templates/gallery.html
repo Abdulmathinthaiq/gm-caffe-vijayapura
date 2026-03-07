@@ -36,6 +36,37 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        .gallery-item {
+            position: relative;
+            overflow: hidden;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        .gallery-item:hover {
+            transform: scale(1.02);
+        }
+        .gallery-item img {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+        }
+        .gallery-caption {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0,0,0,0.8));
+            color: white;
+            padding: 20px;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+        }
+        .gallery-item:hover .gallery-caption {
+            transform: translateY(0);
+        }
+    </style>
 </head>
 <body>
     <!-- Navigation -->
@@ -70,50 +101,67 @@
     <!-- Gallery Section -->
     <section class="gallery-section py-5">
         <div class="container">
-            <div class="row g-4">
-                <div class="col-md-4 col-sm-6">
-                    <div class="gallery-item">
-                        <img src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400" alt="Coffee 1" class="img-fluid rounded">
+            <!-- Check if gallery items exist from database -->
+            <div th:if="${not #lists.isEmpty(galleryItems)}">
+                <div class="row g-4">
+                    <div class="col-md-4 col-sm-6" th:each="gallery : ${galleryItems}">
+                        <div class="gallery-item">
+                            <img th:src="${gallery.imageUrl}" th:alt="${gallery.caption}" class="img-fluid rounded">
+                            <div class="gallery-caption" th:if="${gallery.caption}">
+                                <h5 th:text="${gallery.caption}">Caption</h5>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="col-md-4 col-sm-6">
-                    <div class="gallery-item">
-                        <img src="https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=400" alt="Coffee 2" class="img-fluid rounded">
+            </div>
+            
+            <!-- Fallback static images if no database items -->
+            <div th:if="${#lists.isEmpty(galleryItems)}">
+                <div class="row g-4">
+                    <div class="col-md-4 col-sm-6">
+                        <div class="gallery-item">
+                            <img src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400" alt="Coffee 1" class="img-fluid rounded">
+                        </div>
                     </div>
-                </div>
-                <div class="col-md-4 col-sm-6">
-                    <div class="gallery-item">
-                        <img src="https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=400" alt="Coffee 3" class="img-fluid rounded">
+                    <div class="col-md-4 col-sm-6">
+                        <div class="gallery-item">
+                            <img src="https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=400" alt="Coffee 2" class="img-fluid rounded">
+                        </div>
                     </div>
-                </div>
-                <div class="col-md-4 col-sm-6">
-                    <div class="gallery-item">
-                        <img src="https://images.unsplash.com/photo-1497935586351-b67a49e012bf?w=400" alt="Coffee 4" class="img-fluid rounded">
+                    <div class="col-md-4 col-sm-6">
+                        <div class="gallery-item">
+                            <img src="https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=400" alt="Coffee 3" class="img-fluid rounded">
+                        </div>
                     </div>
-                </div>
-                <div class="col-md-4 col-sm-6">
-                    <div class="gallery-item">
-                        <img src="https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=400" alt="Coffee 5" class="img-fluid rounded">
+                    <div class="col-md-4 col-sm-6">
+                        <div class="gallery-item">
+                            <img src="https://images.unsplash.com/photo-1497935586351-b67a49e012bf?w=400" alt="Coffee 4" class="img-fluid rounded">
+                        </div>
                     </div>
-                </div>
-                <div class="col-md-4 col-sm-6">
-                    <div class="gallery-item">
-                        <img src="https://images.unsplash.com/photo-1504639725590-34d0984388bd?w=400" alt="Coffee 6" class="img-fluid rounded">
+                    <div class="col-md-4 col-sm-6">
+                        <div class="gallery-item">
+                            <img src="https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=400" alt="Coffee 5" class="img-fluid rounded">
+                        </div>
                     </div>
-                </div>
-                <div class="col-md-4 col-sm-6">
-                    <div class="gallery-item">
-                        <img src="https://images.unsplash.com/photo-1511920170033-f8396924c348?w=400" alt="Coffee 7" class="img-fluid rounded">
+                    <div class="col-md-4 col-sm-6">
+                        <div class="gallery-item">
+                            <img src="https://images.unsplash.com/photo-1504639725590-34d0984388bd?w=400" alt="Coffee 6" class="img-fluid rounded">
+                        </div>
                     </div>
-                </div>
-                <div class="col-md-4 col-sm-6">
-                    <div class="gallery-item">
-                        <img src="https://images.unsplash.com/photo-1442512595331-e89e73853f31?w=400" alt="Coffee 8" class="img-fluid rounded">
+                    <div class="col-md-4 col-sm-6">
+                        <div class="gallery-item">
+                            <img src="https://images.unsplash.com/photo-1511920170033-f8396924c348?w=400" alt="Coffee 7" class="img-fluid rounded">
+                        </div>
                     </div>
-                </div>
-                <div class="col-md-4 col-sm-6">
-                    <div class="gallery-item">
-                        <img src="https://images.unsplash.com/photo-1507133750069-bef72f3707a9?w=400" alt="Coffee 9" class="img-fluid rounded">
+                    <div class="col-md-4 col-sm-6">
+                        <div class="gallery-item">
+                            <img src="https://images.unsplash.com/photo-1442512595331-e89e73853f31?w=400" alt="Coffee 8" class="img-fluid rounded">
+                        </div>
+                    </div>
+                    <div class="col-md-4 col-sm-6">
+                        <div class="gallery-item">
+                            <img src="https://images.unsplash.com/photo-1507133750069-bef72f3707a9?w=400" alt="Coffee 9" class="img-fluid rounded">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -123,7 +171,10 @@
     <!-- Footer -->
     <footer class="bg-dark text-white py-4">
         <div class="container text-center">
-            <p>&copy; 2024 GM Caffe. All Rights Reserved.</p>
+            <img th:src="@{/images/Talent Forge Logo.png}" alt="TalentForge Logo" style="max-width: 100px; height: auto; margin-bottom: 10px;">
+            <h5>TalentForge</h5>
+            <p>Empowering Businesses Through Technology</p>
+            <p>&copy; 2024 GM Caffe. All Rights Reserved. | Made By TalentForge</p>
         </div>
     </footer>
 
@@ -131,3 +182,4 @@
     <script th:src="@{/js/main.js}"></script>
 </body>
 </html>
+

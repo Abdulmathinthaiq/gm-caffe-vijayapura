@@ -1,16 +1,17 @@
 package com.gmcaffe.controllers;
 
-import com.gmcaffe.repositories.MenuItemRepository;
-import com.gmcaffe.repositories.OfferRepository;
-import com.gmcaffe.repositories.OrderRepository;
-import com.gmcaffe.repositories.ReviewRepository;
-import com.gmcaffe.repositories.UserRepository;
-
+import com.gmcaffe.models.Gallery;
 import com.gmcaffe.models.MenuItem;
 import com.gmcaffe.models.Offer;
 import com.gmcaffe.models.Order;
 import com.gmcaffe.models.Review;
 import com.gmcaffe.models.User;
+import com.gmcaffe.repositories.GalleryRepository;
+import com.gmcaffe.repositories.MenuItemRepository;
+import com.gmcaffe.repositories.OfferRepository;
+import com.gmcaffe.repositories.OrderRepository;
+import com.gmcaffe.repositories.ReviewRepository;
+import com.gmcaffe.repositories.UserRepository;
 import com.gmcaffe.services.PdfService;
 
 import jakarta.servlet.ServletContext;
@@ -44,6 +45,7 @@ public class AdminController {
     private final ReviewRepository reviewRepository;
     private final UserRepository userRepository;
     private final OfferRepository offerRepository;
+    private final GalleryRepository galleryRepository;
     private final PasswordEncoder passwordEncoder;
     
     @Autowired
@@ -54,6 +56,7 @@ public class AdminController {
                           ReviewRepository reviewRepository,
                           UserRepository userRepository,
                           OfferRepository offerRepository,
+                          GalleryRepository galleryRepository,
                           PasswordEncoder passwordEncoder) {
 
         this.menuItemRepository = menuItemRepository;
@@ -61,6 +64,7 @@ public class AdminController {
         this.reviewRepository = reviewRepository;
         this.userRepository = userRepository;
         this.offerRepository = offerRepository;
+        this.galleryRepository = galleryRepository;
         this.passwordEncoder = passwordEncoder;
     }
     
@@ -625,6 +629,81 @@ public class AdminController {
         response.getWriter().write(content.toString());
     }
     
+    // Export Word
+    @GetMapping("/reports/export/word")
+    public void exportWord(
+            @RequestParam(required = false, defaultValue = "daily") String period,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate,
+            jakarta.servlet.http.HttpServletResponse response) throws Exception {
+        
+        List<Order> orders = getOrdersForPeriod(period, startDate, endDate);
+        
+        BigDecimal totalRevenue = BigDecimal.ZERO;
+        if (orders != null && !orders.isEmpty()) {
+            totalRevenue = orders.stream()
+                .map(Order::getTotalAmount)
+                .filter(amount -> amount != null)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        }
+        
+        String periodLabel = getPeriodLabel(period, startDate, endDate);
+        
+        // Create Word-compatible HTML document
+        StringBuilder content = new StringBuilder();
+        content.append("<html xmlns:o='urn:schemas-microsoft-com:office:office' ");
+        content.append("xmlns:w='urn:schemas-microsoft-com:office:word' ");
+        content.append("xmlns='http://www.w3.org/TR/REC-html40'>");
+        content.append("<head><meta charset='utf-8'><title>GM Caffe Report</title></head><body>");
+        
+        content.append("<h1 style='text-align:center;'>GM Caffe - Financial Report</h1>");
+        content.append("<p style='text-align:center;'><strong>Period:</strong> ").append(periodLabel).append("</p>");
+        
+        content.append("<h2>Summary</h2>");
+        content.append("<table border='1' cellpadding='5' cellspacing='0' style='border-collapse:collapse;'>");
+        content.append("<tr><td><strong>Total Orders</strong></td><td>").append(orders != null ? orders.size() : 0).append("</td></tr>");
+        content.append("<tr><td><strong>Total Revenue</strong></td><td>Rs. ").append(totalRevenue).append("</td></tr>");
+        
+        if (orders != null && !orders.isEmpty() && totalRevenue != null) {
+            double avgOrderValue = totalRevenue.doubleValue() / orders.size();
+            content.append("<tr><td><strong>Average Order Value</strong></td><td>Rs. ").append(String.format("%.2f", avgOrderValue)).append("</td></tr>");
+        }
+        
+        long paidCount = orders != null ? orders.stream().filter(o -> "PAID".equals(o.getPaymentStatus())).count() : 0;
+        content.append("<tr><td><strong>Paid Orders</strong></td><td>").append(paidCount).append("</td></tr>");
+        content.append("</table>");
+        
+        content.append("<h2>Order Details</h2>");
+        content.append("<table border='1' cellpadding='5' cellspacing='0' style='border-collapse:collapse;'>");
+        content.append("<tr style='background-color:#f2f2f2;'>");
+        content.append("<th>Bill ID</th><th>Date</th><th>Customer</th><th>Phone</th>");
+        content.append("<th>Items</th><th>Amount</th><th>Payment</th><th>Status</th>");
+        content.append("</tr>");
+        
+        if (orders != null) {
+            for (Order order : orders) {
+                content.append("<tr>");
+                content.append("<td>").append(safeString(order.getBillId())).append("</td>");
+                content.append("<td>").append(order.getOrderedAt() != null ? order.getOrderedAt().format(java.time.format.DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")) : "").append("</td>");
+                content.append("<td>").append(safeString(order.getCustomerName())).append("</td>");
+                content.append("<td>").append(safeString(order.getPhone())).append("</td>");
+                content.append("<td>").append(safeString(order.getItems()).replace("\n", ", ")).append("</td>");
+                content.append("<td>Rs.").append(order.getTotalAmount() != null ? order.getTotalAmount() : "0").append("</td>");
+                content.append("<td>").append(safeString(order.getPaymentStatus())).append("</td>");
+                content.append("<td>").append(order.getStatus() != null ? order.getStatus().name() : "").append("</td>");
+                content.append("</tr>");
+            }
+        }
+        
+        content.append("</table>");
+        content.append("<p style='text-align:center;margin-top:20px;'>Generated by GM Caffe Admin</p>");
+        content.append("</body></html>");
+        
+        response.setContentType("application/msword");
+        response.setHeader("Content-Disposition", "attachment; filename=GM_Caffe_Report.doc");
+        response.getWriter().write(content.toString());
+    }
+    
     private List<Order> getOrdersForPeriod(String period, String startDate, String endDate) {
         java.time.LocalDate today = java.time.LocalDate.now();
         java.time.LocalDateTime startDateTime;
@@ -769,6 +848,98 @@ public class AdminController {
             redirectAttributes.addFlashAttribute("errorMessage", "Error updating offer: " + e.getMessage());
         }
         return "redirect:/admin/offers";
+    }
+    
+    // ==================== GALLERY MANAGEMENT ====================
+    
+    // Get all gallery items
+    @GetMapping("/gallery")
+    public String manageGallery(Model model) {
+        try {
+            List<Gallery> galleryItems = galleryRepository.findAllByOrderByDisplayOrderAsc();
+            model.addAttribute("galleryItems", galleryItems != null ? galleryItems : Collections.emptyList());
+        } catch (Exception e) {
+            model.addAttribute("galleryItems", Collections.emptyList());
+        }
+        model.addAttribute("gallery", new Gallery());
+        return "admin/gallery";
+    }
+    
+    // Save gallery (with image upload)
+    @PostMapping("/gallery/save")
+    public String saveGallery(@ModelAttribute Gallery gallery,
+                            @RequestParam(value = "imageFile", required = false) MultipartFile file,
+                            RedirectAttributes redirectAttributes) {
+        try {
+            if (file != null && !file.isEmpty()) {
+                String uploadDir = servletContext.getRealPath("/uploads");
+                if (uploadDir == null) {
+                    uploadDir = System.getProperty("user.dir") + "/src/main/resources/static/uploads";
+                }
+                
+                File uploadDirFile = new File(uploadDir);
+                if (!uploadDirFile.exists()) {
+                    uploadDirFile.mkdirs();
+                }
+                
+                String originalFilename = file.getOriginalFilename();
+                String extension = "";
+                if (originalFilename != null && originalFilename.contains(".")) {
+                    extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+                }
+                String newFilename = UUID.randomUUID().toString() + extension;
+                
+                Path filePath = Paths.get(uploadDir, newFilename);
+                Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+                
+                gallery.setImageUrl("/uploads/" + newFilename);
+            }
+            
+            // Handle existing image URL for edits
+            if (gallery.getId() != null && gallery.getImageUrl() == null) {
+                Gallery existing = galleryRepository.findById(gallery.getId()).orElse(gallery);
+                gallery.setImageUrl(existing.getImageUrl());
+            }
+            
+            galleryRepository.save(gallery);
+            redirectAttributes.addFlashAttribute("successMessage", "Gallery photo saved successfully!");
+            
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Error saving gallery photo: " + e.getMessage());
+        }
+        
+        return "redirect:/admin/gallery";
+    }
+    
+    // Edit gallery
+    @GetMapping("/gallery/edit/{id}")
+    public String editGallery(@PathVariable Long id, Model model) {
+        try {
+            Gallery gallery = galleryRepository.findById(id).orElse(new Gallery());
+            model.addAttribute("gallery", gallery);
+        } catch (Exception e) {
+            model.addAttribute("gallery", new Gallery());
+        }
+        
+        try {
+            List<Gallery> galleryItems = galleryRepository.findAllByOrderByDisplayOrderAsc();
+            model.addAttribute("galleryItems", galleryItems != null ? galleryItems : Collections.emptyList());
+        } catch (Exception e) {
+            model.addAttribute("galleryItems", Collections.emptyList());
+        }
+        return "admin/gallery";
+    }
+    
+    // Delete gallery
+    @GetMapping("/gallery/delete/{id}")
+    public String deleteGallery(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            galleryRepository.deleteById(id);
+            redirectAttributes.addFlashAttribute("successMessage", "Gallery photo deleted successfully!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Error deleting gallery photo: " + e.getMessage());
+        }
+        return "redirect:/admin/gallery";
     }
     
     // Helper method for null-safe string
