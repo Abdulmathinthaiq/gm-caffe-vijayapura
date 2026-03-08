@@ -98,6 +98,11 @@
         </div>
         
         <div class="text-center">
+            <p class="mb-1"><strong>Payment Type:</strong> 
+                <span th:if="${order.paymentType == 'CASH'}">Cash</span>
+                <span th:if="${order.paymentType == 'ONLINE'}">Online Payment</span>
+                <span th:if="${order.paymentType == null}">-</span>
+            </p>
             <p class="mb-1"><strong>Payment Status:</strong> <span th:text="${order.paymentStatus}">PENDING</span></p>
             <p class="mb-0">Thank you for visiting GM Caffe!</p>
             <p class="mb-0">Please visit again!</p>

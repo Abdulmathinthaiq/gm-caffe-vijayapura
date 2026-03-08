@@ -46,6 +46,9 @@ public class Order {
     @Column(name = "payment_status", length = 20)
     private String paymentStatus = "PENDING"; // PENDING, PAID
     
+    @Column(name = "payment_type", length = 20)
+    private String paymentType = "CASH"; // ONLINE, CASH
+    
     public enum OrderStatus {
         PENDING, PREPARING, READY, DELIVERED, CANCELLED
     }
@@ -107,4 +110,7 @@ public class Order {
     
     public String getPaymentStatus() { return paymentStatus; }
     public void setPaymentStatus(String paymentStatus) { this.paymentStatus = paymentStatus; }
+    
+    public String getPaymentType() { return paymentType; }
+    public void setPaymentType(String paymentType) { this.paymentType = paymentType; }
 }

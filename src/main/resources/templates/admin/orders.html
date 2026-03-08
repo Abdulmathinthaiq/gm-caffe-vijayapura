@@ -63,11 +63,18 @@
                             </div>
                             
                             <div class="row">
-                                <div class="col-md-6 mb-3">
+                                <div class="col-md-4 mb-3">
                                     <label class="form-label">Delivery Notes</label>
                                     <input type="text" name="deliveryNotes" class="form-control" placeholder="Special instructions (optional)">
                                 </div>
-                                <div class="col-md-6 mb-3">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Payment Type *</label>
+                                    <select name="paymentType" class="form-select" required>
+                                        <option value="CASH" selected>Cash</option>
+                                        <option value="ONLINE">Online Payment</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4 mb-3">
                                     <label class="form-label">&nbsp;</label>
                                     <button type="submit" class="btn btn-success w-100 mt-4">
                                         <i class="fas fa-print"></i> Create & Print Bill
@@ -173,7 +180,8 @@
                                     <th>Address</th>
                                     <th>Items</th>
                                     <th>Total</th>
-                                    <th>Payment</th>
+                                    <th>Payment Type</th>
+                                    <th>Payment Status</th>
                                     <th>Status</th>
                                     <th>Date</th>
                                     <th>Actions</th>
@@ -191,6 +199,11 @@
                                     <td th:text="${order.address != null ? order.address : '-'}">-</td>
                                     <td th:text="${order.items}">2x Coffee</td>
                                     <td th:text="'₹' + ${order.totalAmount}">₹300</td>
+                                    <td>
+                                        <span class="badge bg-success" th:if="${order.paymentType == 'CASH'}"><i class="fas fa-money-bill"></i> Cash</span>
+                                        <span class="badge bg-primary" th:if="${order.paymentType == 'ONLINE'}"><i class="fas fa-credit-card"></i> Online</span>
+                                        <span th:if="${order.paymentType == null}">-</span>
+                                    </td>
                                     <td>
                                         <form th:action="@{/admin/orders/{id}/payment(id=${order.id})}" method="post" class="d-inline">
                                             <select name="paymentStatus" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">

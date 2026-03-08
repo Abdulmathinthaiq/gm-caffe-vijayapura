@@ -322,6 +322,7 @@ public class AdminController {
                                     @RequestParam String totalAmount,
                                     @RequestParam(defaultValue = "") String address,
                                     @RequestParam(defaultValue = "") String deliveryNotes,
+                                    @RequestParam(defaultValue = "CASH") String paymentType,
                                     RedirectAttributes redirectAttributes) {
         try {
             Order order = new Order();
@@ -333,6 +334,7 @@ public class AdminController {
             order.setDeliveryNotes(deliveryNotes);
             order.setOrderType("OFFLINE");
             order.setPaymentStatus("PAID");
+            order.setPaymentType(paymentType);
             order.setStatus(Order.OrderStatus.DELIVERED);
             
             Order savedOrder = orderRepository.save(order);
