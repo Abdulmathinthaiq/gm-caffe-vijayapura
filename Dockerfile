@@ -9,8 +9,9 @@ RUN mvn clean package -DskipTests -B
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
-# Set production profile
+# Set production profile and port
 ENV SPRING_PROFILES_ACTIVE=prod
+ENV PORT=${PORT:-3000}
 
 # Create necessary directories
 RUN mkdir -p /app/static /app/templates /app/static/uploads

@@ -44,6 +44,7 @@ if [ -n "$MYSQL_URL" ]; then
     echo "Connecting as user: $DB_USER"
     
     exec java \
+        -Dserver.port=${PORT:-3000} \
         -Dspring.datasource.url="$JDBC_URL" \
         -Dspring.datasource.username="$DB_USER" \
         -Dspring.datasource.password="$DB_PASS" \
@@ -71,6 +72,7 @@ elif [ -n "$MYSQL_PUBLIC_URL" ]; then
     echo "Connecting as user: $DB_USER"
     
     exec java \
+        -Dserver.port=${PORT:-3000} \
         -Dspring.datasource.url="$JDBC_URL" \
         -Dspring.datasource.username="$DB_USER" \
         -Dspring.datasource.password="$DB_PASS" \
@@ -84,11 +86,12 @@ elif [ -n "$MYSQLHOST" ]; then
     echo "JDBC URL: $JDBC_URL"
     
     exec java \
+        -Dserver.port=${PORT:-3000} \
         -Dspring.datasource.url="$JDBC_URL" \
         -Dspring.datasource.username="$MYSQLUSER" \
         -Dspring.datasource.password="$MYSQLPASSWORD" \
         -jar app.jar
 else
     echo "No MySQL configuration found, using environment variables..."
-    exec java -jar app.jar
+    exec java -Dserver.port=${PORT:-3000} -jar app.jar
 fi
