@@ -9,9 +9,9 @@ RUN mvn clean package -DskipTests -B
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
-# Set production profile and port
+# Set production profile - Railway will provide PORT via environment variable
 ENV SPRING_PROFILES_ACTIVE=prod
-ENV PORT=${PORT:-3000}
+ENV PORT=3000
 
 # Create necessary directories
 RUN mkdir -p /app/static /app/templates /app/static/uploads
@@ -30,8 +30,8 @@ COPY --from=build /app/src/main/resources/templates /app/templates
 # Expose port
 EXPOSE 3000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+# Health check - increased start period for Spring Boot startup
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
   CMD wget --quiet --tries=1 --spider http://localhost:3000/ || exit 1
 
 # Run the application
