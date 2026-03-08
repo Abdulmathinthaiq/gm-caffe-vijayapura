@@ -27,11 +27,11 @@ COPY --from=build /app/src/main/resources/static /app/static
 COPY --from=build /app/src/main/resources/templates /app/templates
 
 # Expose port
-EXPOSE 8080
+EXPOSE 3000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD wget --quiet --tries=1 --spider http://localhost:8080/ || exit 1
+  CMD wget --quiet --tries=1 --spider http://localhost:3000/ || exit 1
 
 # Run the application
 ENTRYPOINT ["/startup.sh"]
