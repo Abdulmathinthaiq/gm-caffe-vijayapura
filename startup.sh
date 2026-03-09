@@ -17,6 +17,11 @@ echo "SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-NOT SET}"
 echo "PORT: ${PORT:-NOT SET}"
 echo "========================================="
 
+# JDBC connection parameters optimized for Railway/MySQL
+# Using allowPublicKeyRetrieval=true to fix "Public Key Retrieval" errors
+# Using connectTimeout to handle network issues
+JDBC_PARAMS="?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&connectTimeout=30000&socketTimeout=60000"
+
 # Strategy: Use MYSQL_PUBLIC_URL first (public proxy for Railway)
 # The internal hostname (mysql-8u1h.railway.internal) has permission issues from containers
 
@@ -37,11 +42,12 @@ if [ -n "$MYSQL_PUBLIC_URL" ]; then
     DB_HOST="${HOSTPORT%%:*}"
     DB_PORT="${HOSTPORT#*:}"
     
-    # Use the public proxy for connection
-    JDBC_URL="jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true"
+    # Use the public proxy for connection with enhanced parameters
+    JDBC_URL="jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}${JDBC_PARAMS}"
     
     echo "JDBC URL: $JDBC_URL"
     echo "Connecting as user: $DB_USER"
+    echo "========================================="
     
     exec java \
         -Dserver.port=${PORT:-3000} \
@@ -66,11 +72,12 @@ elif [ -n "$MYSQL_URL" ]; then
     DB_HOST="${HOSTPORT%%:*}"
     DB_PORT="${HOSTPORT#*:}"
     
-    # Use internal hostname for direct connection
-    JDBC_URL="jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true"
+    # Use internal hostname for direct connection with enhanced parameters
+    JDBC_URL="jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}${JDBC_PARAMS}"
     
     echo "JDBC URL: $JDBC_URL"
     echo "Connecting as user: $DB_USER"
+    echo "========================================="
     
     exec java \
         -Dserver.port=${PORT:-3000} \
@@ -82,9 +89,10 @@ elif [ -n "$MYSQL_URL" ]; then
 elif [ -n "$MYSQLHOST" ]; then
     echo "Using MYSQLHOST: $MYSQLHOST"
     
-    JDBC_URL="jdbc:mysql://${MYSQLHOST}:${MYSQLPORT:-3306}/${MYSQLDATABASE:-railway}?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true"
+    JDBC_URL="jdbc:mysql://${MYSQLHOST}:${MYSQLPORT:-3306}/${MYSQLDATABASE:-railway}${JDBC_PARAMS}"
     
     echo "JDBC URL: $JDBC_URL"
+    echo "========================================="
     
     exec java \
         -Dserver.port=${PORT:-3000} \
@@ -93,6 +101,8 @@ elif [ -n "$MYSQLHOST" ]; then
         -Dspring.datasource.password="$MYSQLPASSWORD" \
         -jar app.jar
 else
-    echo "No MySQL configuration found, using environment variables..."
+    echo "ERROR: No MySQL configuration found!"
+    echo "Please set one of: MYSQL_PUBLIC_URL, MYSQL_URL, or MYSQLHOST"
+    echo "========================================="
     exec java -Dserver.port=${PORT:-3000} -jar app.jar
 fi
