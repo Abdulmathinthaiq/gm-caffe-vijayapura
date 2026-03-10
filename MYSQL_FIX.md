@@ -7,21 +7,19 @@ The application is failing with:
 java.sql.SQLException: Access denied for user 'root'@'100.64.0.x' (using password: YES)
 ```
 
-This is a **MySQL user permission issue** - not a code issue.
+This is a **MySQL user permission issue** - the code is correctly configured, but the MySQL user doesn't have permission to connect from Railway's container network.
 
-## Root Cause
+---
 
-The MySQL database user 'root' is not configured to allow connections from Railway's internal container network (IP range 100.64.0.0/16).
+## ⚠️ IMPORTANT: The Real Fix (MySQL Permissions)
 
-## Solution
+You MUST fix the MySQL user permissions in Railway's database. This cannot be fixed via code alone.
 
-You need to grant the MySQL user permission to connect from Railway's internal network.
+### Option 1: Grant Access from Railway's Internal Network (Recommended)
 
-### Option 1: Use Railway's MySQL CLI (Recommended)
-
-1. Go to your Railway dashboard
-2. Open your MySQL database
-3. Click "Connect" → "MySQL CLI"
+1. Go to your **Railway dashboard**
+2. Open your **MySQL database**
+3. Click **"Connect"** → **"MySQL CLI"**
 4. Run these commands:
 
 ```sql
@@ -30,39 +28,57 @@ GRANT ALL PRIVILEGES ON railway.* TO 'root'@'100.64.0.%' IDENTIFIED BY 'TyuSNNlW
 FLUSH PRIVILEGES;
 ```
 
-### Option 2: Allow Access from Any Host (Simpler)
+### Option 2: Allow Access from Any Host (Simpler but Less Secure)
 
 ```sql
--- Grant access from any host (less secure but works)
+-- Grant access from any host
 GRANT ALL PRIVILEGES ON railway.* TO 'root'@'%' IDENTIFIED BY 'TyuSNNlWXGgUBOXvBezwCSIYAggSAUdu';
 FLUSH PRIVILEGES;
 ```
 
-### Option 3: Create a New User with Proper Permissions
+### Option 3: Create a New Dedicated User
 
 ```sql
--- Create a dedicated user for your app
-CREATE USER 'gmcaffe'@'100.64.0.%' IDENTIFIED BY 'your_new_strong_password';
+-- Create a dedicated user for your app with proper permissions
+CREATE USER 'gmcaffe'@'100.64.0.%' IDENTIFIED BY 'your_strong_password_here';
 GRANT ALL PRIVILEGES ON railway.* TO 'gmcaffe'@'100.64.0.%';
 FLUSH PRIVILEGES;
 ```
 
 Then update your Railway environment variables to use this new user.
 
-## After Fixing Permissions
-
-1. Redeploy your application to Railway
-2. Check the logs to verify the connection is successful
+---
 
 ## Code Changes Made
 
 The following files have been updated to improve connection handling:
 
-1. **startup.sh** - Added:
-   - Enhanced JDBC connection parameters (`connectTimeout=30000`, `socketTimeout=60000`)
-   - Better error handling and logging
+### 1. startup.sh
+- Fixed JDBC URL parameter format (moved `?` before parameters)
+- Added robust port extraction handling
+- Added validation for parsed values
+- Added explicit `-Dspring.jpa.hibernate.ddl-auto=update` parameter
+- Added default fallback for MYSQLUSER (`${MYSQLUSER:-root}`)
+- Improved logging for debugging connection issues
 
-2. **application-prod.properties** - Added:
-   - `connectTimeout=30000` and `socketTimeout=60000` to JDBC URL
-   - `leak-detection-threshold=60000` to HikariCP for better connection monitoring
+### 2. application-prod.properties
+- Added default value for MYSQLUSER (`${MYSQLUSER:root}`)
+- Added comment about preferring MYSQL_PUBLIC_URL
+
+---
+
+## After Fixing MySQL Permissions
+
+1. **Rebuild and redeploy** your application to Railway
+2. Check the logs to verify the connection is successful
+3. The application should start without the "Access denied" error
+
+## Verification
+
+After deploying, check your logs for:
+```
+HikariPool-1 - Start completed
+```
+
+This indicates the database connection was successful.
 
