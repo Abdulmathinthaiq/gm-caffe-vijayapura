@@ -13,8 +13,8 @@ WORKDIR /app
 ENV SPRING_PROFILES_ACTIVE=prod
 ENV PORT=3000
 
-# Create necessary directories
-RUN mkdir -p /app/static /app/templates /app/static/uploads
+# Create necessary directories including data directory for H2 database
+RUN mkdir -p /app/static /app/templates /app/static/uploads /app/data
 
 # Copy the JAR file from build stage
 COPY --from=build /app/target/gm-caffe-site-1.0.0.jar app.jar
