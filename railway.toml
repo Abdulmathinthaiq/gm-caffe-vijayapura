@@ -10,3 +10,20 @@ restartPolicyMaxRetries = 10
 healthcheckPath = "/"
 healthcheckTimeout = 60
 startupTimeout = 300
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+buildEnvironment = "V3"
+
+[deploy]
+runtime = "V2"
+numReplicas = 1
+healthcheckPath = "/"
+sleepApplication = false
+useLegacyStacker = false
+ipv6EgressEnabled = false
+multiRegionConfig = {"asia-southeast1-eqsg3a":{"numReplicas":1}}
+restartPolicyType = "ON_FAILURE"
+healthcheckTimeout = 60
+restartPolicyMaxRetries = 10
