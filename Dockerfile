@@ -11,10 +11,10 @@ WORKDIR /app
 
 # Set production profile - Railway will provide PORT via environment variable
 ENV SPRING_PROFILES_ACTIVE=prod
-ENV PORT=3000
+ENV PORT=8080
 
-# Create necessary directories including data directory for H2 database
-RUN mkdir -p /app/static /app/templates /app/static/uploads /app/data
+# Create necessary directories
+RUN mkdir -p /app/static /app/templates /app/static/uploads
 
 # Copy the JAR file from build stage
 COPY --from=build /app/target/gm-caffe-site-1.0.0.jar app.jar
@@ -28,11 +28,11 @@ COPY --from=build /app/src/main/resources/static /app/static
 COPY --from=build /app/src/main/resources/templates /app/templates
 
 # Expose port
-EXPOSE 3000
+EXPOSE 8080
 
 # Health check - increased start period for Spring Boot startup
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
-  CMD wget --quiet --tries=1 --spider http://localhost:3000/ || exit 1
+  CMD wget --quiet --tries=1 --spider http://localhost:8080/ || exit 1
 
 # Run the application
 ENTRYPOINT ["/startup.sh"]
