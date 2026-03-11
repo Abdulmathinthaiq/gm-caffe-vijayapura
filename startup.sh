@@ -20,7 +20,7 @@ echo "========================================="
 # JDBC connection parameters optimized for Railway/MySQL
 JDBC_PARAMS="useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&connectTimeout=30000&socketTimeout=60000"
 
-# Use MYSQL_PUBLIC_URL if available (public proxy for Railway)
+# Use MYSQL_PUBLIC_URL if available (public proxy for Railway) - PRIORITY FIRST
 if [ -n "$MYSQL_PUBLIC_URL" ]; then
     echo "Using MYSQL_PUBLIC_URL: $MYSQL_PUBLIC_URL"
     
