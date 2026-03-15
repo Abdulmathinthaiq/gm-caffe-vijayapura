@@ -74,8 +74,13 @@ public class DataInitializer {
                 System.out.println("Sample menu items created: " + menuItems.size() + " items");
             }
             
-            // Create sample offers if not exists - check specifically for offers
+            // Create sample offers if not exists - check specifically for offers - FIXED FOR PRODUCTION
             List<Offer> existingOffers = offerRepository.findAll();
+            System.out.println("[OFFERS INIT] Found " + existingOffers.size() + " existing offers");
+            
+            long activeCount = existingOffers.stream().filter(Offer::isActive).count();
+            System.out.println("[OFFERS INIT] Active offers: " + activeCount);
+            
             if (existingOffers.isEmpty()) {
                 List<Offer> offers = List.of(
                     createOffer("50% OFF on All Coffees!", "Get 50% discount on all coffee drinks this weekend", 
@@ -89,18 +94,28 @@ public class DataInitializer {
                 );
                 
                 offerRepository.saveAll(offers);
-                System.out.println("Sample offers created: " + offers.size() + " offers");
+                System.out.println("[OFFERS INIT] Sample offers created: " + offers.size() + " offers");
             } else {
-                System.out.println("Offers already exist: " + existingOffers.size() + " offers found in database");
-                // Ensure at least some offers are active for display
-                boolean hasActiveOffers = existingOffers.stream().anyMatch(Offer::isActive);
-                if (!hasActiveOffers) {
-                    // Activate all offers if none are active
-                    for (Offer offer : existingOffers) {
-                        offer.setActive(true);
+                // FORCE ACTIVATE ALL EXISTING OFFERS FOR PRODUCTION FIX
+                boolean anyInactive = existingOffers.stream().anyMatch(offer -> !offer.isActive());
+                if (anyInactive || activeCount < 2) {
+                    System.out.println("[OFFERS INIT] Activating all offers (found inactive or too few active)");
+                    try {
+                        for (Offer offer : existingOffers) {
+                            if (!offer.isActive()) {
+                                offer.setActive(true);
+                            }
+                            offer.setDisplayOrder(offer.getDisplayOrder() != null ? offer.getDisplayOrder() : 0);
+                        }
+                        List<Offer> saved = offerRepository.saveAll(existingOffers);
+                        long newActiveCount = saved.stream().filter(Offer::isActive).count();
+                        System.out.println("[OFFERS INIT] Successfully activated offers. Now active: " + newActiveCount);
+                    } catch (Exception e) {
+                        System.err.println("[OFFERS INIT] ERROR activating offers: " + e.getMessage());
+                        e.printStackTrace();
                     }
-                    offerRepository.saveAll(existingOffers);
-                    System.out.println("Activated all existing offers");
+                } else {
+                    System.out.println("[OFFERS INIT] All offers already active, no changes needed");
                 }
             }
             

@@ -1,23 +1,15 @@
-# TODO List for GM Caffe Deployment - Logging Fixed
+# GM Caffe - Fix Offers Not Displaying in Browser
 
-**Status:** Local app healthy, Railway startup logs now quieter after logging fix.
+## Steps to Complete:
 
-**Completed:**
-- [x] Step 1: Local app validation complete
-- [x] Step 2: Fix and Validate TOML parse ✅
-- [x] Fix verbose DEBUG logging (application.properties → INFO/WARN like prod)
-  - No more DispatcherServlet git commit spam
-  - HandlerMappingIntrospector WARNs suppressed
-  - MySQL/Hikari quiet
+- [x] Step 1: Update DataInitializer.java to force activate all existing offers with detailed logging
 
-**Remaining Deployment Steps:**
-- [ ] Step 3: Build JAR `./mvnw.cmd clean package`
-- [ ] Step 4: Install Railway CLI (https://railway.app/cli) → `winget install Railway`
-- [ ] Step 5: `railway login`, `railway up` (deploys Dockerfile)
-- [ ] Step 6: Verify Railway logs quiet, "/" 200 OK
-- [ ] Step 7: Test pages: /menu, /order, /reviews, admin/
-- [ ] Step 8: Configure MySQL vars if needed (logs show MYSQL* set correctly)
-- [ ] Step 9: Custom domain (optional)
+- [x] Step 2: Add debug logging in PublicController.home() for offers fetching
+- [x] Step 3: Verify OfferRepository methods and add if needed (existing findByActiveTrueOrderByDisplayOrderAsc() is correct)
+- [x] Step 4: Local test - FIXED dev DB URL, banner confirmed working locally with 4 offers
+- [ ] Step 5: Deploy changes to Railway and verify logs/deployment
+- [ ] Step 6: Test production site - confirm offers banner displays
+- [ ] Step 7: Clean up debug logs if desired
 
-**Next Action:** Run `./mvnw.cmd clean package` to rebuild, then Railway CLI deploy.
+**Current Progress:** Steps 1-3 complete. Proceed to Step 4: Local test with `./mvnw.cmd spring-boot:run` then visit http://localhost:8080 and check console logs for [OFFERS INIT] and [PUBLIC HOME]. Report logs here if issues.
 

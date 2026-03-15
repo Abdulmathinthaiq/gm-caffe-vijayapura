@@ -77,16 +77,21 @@ public class PublicController {
         }
         model.addAttribute("avgRating", avgRating != null ? avgRating : 0.0);
         
-        // Get active offers with null safety
+        // Get active offers with null safety and DEBUG logging
         List<Offer> activeOffers;
         try {
+            System.out.println("[PUBLIC HOME] Fetching active offers...");
             List<Offer> allOffers = offerRepository.findByActiveTrueOrderByDisplayOrderAsc();
             activeOffers = allOffers != null ? allOffers : Collections.emptyList();
+            System.out.println("[PUBLIC HOME] Found " + activeOffers.size() + " active offers: " + 
+                (activeOffers.isEmpty() ? "NONE" : activeOffers.get(0).getTitle()));
         } catch (Exception e) {
-            System.err.println("Error fetching offers: " + e.getMessage());
+            System.err.println("[PUBLIC HOME] ERROR fetching offers: " + e.getMessage());
+            e.printStackTrace();
             activeOffers = Collections.emptyList();
         }
         model.addAttribute("offers", activeOffers);
+        System.out.println("[PUBLIC HOME] Added " + activeOffers.size() + " offers to model");
         
         return "index";
     }
