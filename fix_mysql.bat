@@ -11,7 +11,7 @@ REM Note: The password contains special characters, so we use -p without space
 
 "C:\Program Files\MySQL\MySQL Server 8.4\bin\mysql.exe" -h tramway.proxy.rlwy.net -P 28976 -u root -pTyuSNNlWXGgUBOXvBezwCSIYAggSAUdu railway -e "GRANT ALL PRIVILEGES ON railway.* TO 'root'@'100.64.0.%' IDENTIFIED BY 'TyuSNNlWXGgUBOXvBezwCSIYAggSAUdu'; FLUSH PRIVILEGES;"
 
-echo ========================================
+echo ========================ls================
 echo MySQL permissions updated!
 echo Please redeploy your Railway app
 echo ========================================
