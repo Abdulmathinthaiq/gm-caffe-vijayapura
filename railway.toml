@@ -12,7 +12,7 @@ useLegacyStacker = false
 ipv6EgressEnabled = false
 
 [[deploy.multiRegionConfig]]
-[asia-southeast1-eqsg3a]
+[deploy.multiRegionConfig.asia-southeast1-eqsg3a]
 numReplicas = 1
 
 restartPolicyType = \"ON_FAILURE\"
