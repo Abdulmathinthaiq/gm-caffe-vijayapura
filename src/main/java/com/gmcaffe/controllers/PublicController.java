@@ -173,8 +173,6 @@ public class PublicController {
                               @RequestParam String comment,
                               RedirectAttributes redirectAttributes) {
         try {
-            System.out.println("DEBUG: Submitting review - Name: " + customerName + ", Email: " + customerEmail + ", Rating: " + rating);
-            
             // Validate input
             if (customerName == null || customerName.trim().isEmpty()) {
                 redirectAttributes.addFlashAttribute("errorMessage", "Please enter your name.");
@@ -193,13 +191,11 @@ public class PublicController {
             review.setApproved(false);
             
             Review savedReview = reviewRepository.save(review);
-            System.out.println("DEBUG: Review saved successfully with ID: " + savedReview.getId());
             
             redirectAttributes.addFlashAttribute("successMessage", "Thank you! Your review has been submitted successfully and is pending approval.");
             return "redirect:/thankyou-review";
 
         } catch (Exception e) {
-            System.out.println("DEBUG: Error saving review: " + e.getMessage());
             e.printStackTrace();
             redirectAttributes.addFlashAttribute("errorMessage", "Error submitting review: " + e.getMessage());
             return "redirect:/reviews?error=true";
@@ -249,9 +245,8 @@ public class PublicController {
             return "redirect:/thankyou";
             
         } catch (Exception e) {
-            System.out.println("DEBUG: Error processing order: " + e.getMessage());
             e.printStackTrace();
-            redirectAttributes.addFlashAttribute("errorMessage", "Error processing order: " + e.getMessage());
+            redirectAttributes.addFlashAttribute("errorMessage", "Error processing order. Please try again.");
             return "redirect:/order?error=true";
         }
     }
